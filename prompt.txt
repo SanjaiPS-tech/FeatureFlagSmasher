@@ -1,0 +1,746 @@
+https://github.com/SanjaiPS-tech/FeatureFlagSmasher.git
+
+# FeatureFlagSmasher — FeatureFlagLite
+
+Build a **minimal, clean, production-style Feature Flag and Configuration Service** called **FeatureFlagLite**, inspired by the core concept of **Flagsmith**, but intentionally simplified for a small academic/project implementation.
+
+## 1. Project Goal
+
+FeatureFlagLite allows developers to:
+
+* Create feature flags.
+* Define a flag's name, description, and default state.
+* Maintain independent flag states for **dev, test, and prod** environments.
+* Read all feature flag states through an API for a specific environment.
+* Track who changed a flag, what changed, and when.
+* Support **percentage rollout from 0–100%** for gradual feature enablement.
+* Provide a small test website/application that consumes the API and demonstrates the feature flags.
+
+The implementation should prioritize **simplicity, maintainability, performance, clean architecture, validation, error handling, caching, and meaningful naming**.
+
+---
+
+## 2. Technology Stack
+
+### Backend
+
+* Java
+* Spring Boot
+* Spring Web
+* Spring Data JPA
+* MySQL
+* Bean Validation
+* SLF4J / Logback
+* Spring Cache
+
+### Frontend/Test Site
+
+Create a very small test website using:
+
+* HTML
+* CSS
+* JavaScript
+
+The test site should consume the FeatureFlagLite API and display feature behavior based on the selected environment and flag configuration.
+
+---
+
+## 3. Core Entities
+
+Use exactly these main entities:
+
+### FeatureFlag
+
+Fields:
+
+* `id`
+* `name`
+* `description`
+* `defaultState`
+* `createdAt`
+* `updatedAt`
+
+### Environment
+
+Fields:
+
+* `id`
+* `name`
+
+Supported environments:
+
+* `dev`
+* `test`
+* `prod`
+
+### FlagState
+
+Represents the state of a feature flag inside an environment.
+
+Fields:
+
+* `id`
+* `featureFlagId`
+* `environmentId`
+* `enabled`
+* `rolloutPercentage`
+* `updatedAt`
+
+Constraints:
+
+* `rolloutPercentage` must be between `0` and `100`.
+* One flag must have only one state per environment.
+
+### ChangeLog
+
+Stores flag configuration history.
+
+Fields:
+
+* `id`
+* `featureFlagId`
+* `environmentId`
+* `oldEnabled`
+* `newEnabled`
+* `oldRolloutPercentage`
+* `newRolloutPercentage`
+* `changedBy`
+* `changedAt`
+
+---
+
+## 4. Main Features
+
+### Feature Flag Management
+
+Implement APIs to:
+
+* Create a feature flag.
+* Get a feature flag.
+* Get all feature flags.
+* Update a feature flag.
+* Delete a feature flag.
+
+Creation should require:
+
+* Name
+* Description
+* Default state
+
+Validate that flag names are:
+
+* Required
+* Non-empty
+* Meaningful
+* Unique
+
+---
+
+### Environment-Specific Configuration
+
+A feature flag must be independently configurable for:
+
+```text
+dev
+test
+prod
+```
+
+Example:
+
+```text
+newDashboard
+    dev  -> ON
+    test -> ON
+    prod -> OFF
+```
+
+Changing one environment must not modify the others.
+
+---
+
+### Percentage Rollout
+
+Support gradual rollout:
+
+```text
+0%   -> Disabled
+25%  -> Enabled for approximately 25% of users
+50%  -> Enabled for approximately 50% of users
+100% -> Fully enabled
+```
+
+Store rollout as an integer between `0` and `100`.
+
+For the read/evaluation API, allow an optional user identifier such as:
+
+```text
+?userId=123
+```
+
+Use a deterministic hashing approach so the same user consistently receives the same result for the same flag.
+
+Avoid random evaluation on every request.
+
+---
+
+## 5. Read API
+
+Provide a simple API for client applications to retrieve feature flags for an environment.
+
+Example:
+
+```http
+GET /api/v1/flags?environment=dev
+```
+
+Response:
+
+```json
+{
+  "environment": "dev",
+  "flags": {
+    "newDashboard": true,
+    "darkMode": false,
+    "newCheckout": true
+  }
+}
+```
+
+Also provide an evaluation API:
+
+```http
+GET /api/v1/flags/{flagName}/evaluate?environment=dev&userId=123
+```
+
+Response:
+
+```json
+{
+  "flagName": "newDashboard",
+  "environment": "dev",
+  "enabled": true,
+  "rolloutPercentage": 50
+}
+```
+
+Keep read operations lightweight and optimized because they may be called frequently by client applications.
+
+---
+
+## 6. Change History
+
+Whenever a flag's environment-specific state changes:
+
+* Record the previous state.
+* Record the new state.
+* Record the environment.
+* Record the user who made the change.
+* Record the timestamp.
+
+Example:
+
+```text
+Flag: newDashboard
+Environment: prod
+Changed By: admin
+Old State: OFF
+New State: ON
+Old Rollout: 0
+New Rollout: 50
+Changed At: 2026-09-28 10:30:15
+```
+
+Provide an API to retrieve change history:
+
+```http
+GET /api/v1/flags/{flagName}/history
+```
+
+---
+
+## 7. Test Website
+
+Create a **simple FeatureFlagLite demo website** to verify the service.
+
+The website should provide:
+
+* Environment selector:
+
+  * Dev
+  * Test
+  * Prod
+* List of available feature flags.
+* Current ON/OFF status.
+* Rollout percentage.
+* User ID input for testing percentage rollout.
+* Button to evaluate a flag.
+* Visual demonstration of enabled/disabled features.
+
+Example:
+
+```text
+Environment: [ DEV ▼ ]
+
+Feature Flags
+
+New Dashboard     ON
+Dark Mode         OFF
+New Checkout      50%
+
+Test User ID: [12345]
+
+[ Evaluate ]
+```
+
+Use plain HTML/CSS/JavaScript and fetch the backend APIs.
+
+---
+
+## 8. REST API Structure
+
+Use clean RESTful endpoints.
+
+Suggested structure:
+
+```text
+/api/v1/flags
+/api/v1/flags/{id}
+/api/v1/flags/{flagName}
+/api/v1/flags/{flagName}/states
+/api/v1/flags/{flagName}/evaluate
+/api/v1/flags/{flagName}/history
+/api/v1/environments
+```
+
+Use appropriate HTTP status codes:
+
+```text
+200 OK
+201 CREATED
+204 NO CONTENT
+400 BAD REQUEST
+404 NOT FOUND
+409 CONFLICT
+500 INTERNAL SERVER ERROR
+```
+
+---
+
+## 9. Architecture
+
+Use a clean layered architecture:
+
+```text
+Controller
+    ↓
+Service
+    ↓
+Repository
+    ↓
+Database
+```
+
+Recommended package structure:
+
+```text
+com.featureflaglite
+│
+├── controller
+├── service
+├── repository
+├── entity
+├── dto
+├── exception
+├── config
+├── mapper
+└── util
+```
+
+Use DTOs for API requests/responses instead of exposing JPA entities directly.
+
+Keep business logic inside the service layer.
+
+---
+
+## 10. Input Validation
+
+Use Spring Validation.
+
+Validate:
+
+* Required fields.
+* String length.
+* Unique flag names.
+* Valid environment names.
+* Rollout percentage `0–100`.
+* Invalid IDs.
+* Invalid request bodies.
+* Invalid query parameters.
+
+Return structured validation errors.
+
+Example:
+
+```json
+{
+  "timestamp": "2026-09-28T10:30:15",
+  "status": 400,
+  "error": "VALIDATION_ERROR",
+  "message": "rolloutPercentage must be between 0 and 100"
+}
+```
+
+---
+
+## 11. Error Handling
+
+Implement centralized exception handling using:
+
+```text
+@RestControllerAdvice
+```
+
+Create meaningful custom exceptions such as:
+
+```text
+FeatureFlagNotFoundException
+EnvironmentNotFoundException
+DuplicateFeatureFlagException
+InvalidFlagStateException
+```
+
+Do not expose stack traces or internal database errors to API clients.
+
+---
+
+## 12. Caching
+
+Optimize frequent read operations using Spring Cache.
+
+Cache:
+
+* Environment-specific flag states.
+* Frequently requested flag evaluations.
+
+Example cache key:
+
+```text
+flags:dev
+flags:test
+flags:prod
+```
+
+Invalidate or refresh the relevant cache whenever a flag state changes.
+
+Do not return stale data after an update.
+
+Keep the caching implementation simple and suitable for a single-instance application.
+
+---
+
+## 13. Database Optimization
+
+Use MySQL with proper indexes and constraints.
+
+Important constraints/indexes:
+
+```text
+FeatureFlag.name          UNIQUE
+Environment.name         UNIQUE
+(featureFlagId, environmentId) UNIQUE
+```
+
+Use:
+
+* Lazy relationships where appropriate.
+* Pagination for history APIs when needed.
+* Efficient queries.
+* Avoid N+1 query problems.
+* Avoid unnecessary database calls.
+* Use transactions for flag-state updates and change-log creation.
+
+Do not over-engineer the database.
+
+---
+
+## 14. Performance and Complexity
+
+Keep the application lightweight.
+
+Requirements:
+
+* Read APIs should minimize database access.
+* Use caching for frequently requested configuration.
+* Percentage rollout evaluation should be deterministic and approximately `O(1)`.
+* Avoid unnecessary object creation.
+* Avoid loading full entity graphs for simple API requests.
+* Use projections or optimized queries where useful.
+* Keep API responses small.
+
+Do not introduce unnecessary microservices or complex infrastructure.
+
+---
+
+## 15. Logging and Telemetry
+
+Add meaningful structured application logging.
+
+Log important events such as:
+
+```text
+Feature flag created
+Feature flag updated
+Flag state changed
+Rollout percentage changed
+Feature flag deleted
+Invalid API request
+Unexpected exception
+Cache invalidation
+```
+
+Do not log sensitive information.
+
+Use appropriate log levels:
+
+```text
+INFO
+WARN
+ERROR
+DEBUG
+```
+
+Include useful context such as:
+
+```text
+flagName
+environment
+changedBy
+operation
+```
+
+---
+
+## 16. Resource Handling
+
+Implement proper resource handling:
+
+* Database connections managed by Spring.
+* Transactions handled correctly.
+* No manual connection leaks.
+* Proper HTTP status responses.
+* No unnecessary thread creation.
+* Clean application shutdown.
+* Proper exception handling for external/resource failures.
+
+---
+
+## 17. Naming and Code Quality
+
+Follow clean-code principles.
+
+Use:
+
+* `camelCase` for variables and methods.
+* `PascalCase` for classes.
+* Meaningful names.
+* Small focused methods.
+* Single responsibility.
+* No duplicate business logic.
+* No magic numbers.
+* Constants for repeated values.
+* Clear DTO and service naming.
+
+Examples:
+
+```java
+featureFlagService
+environmentRepository
+rolloutPercentage
+changeLogRepository
+evaluateFeatureFlag()
+```
+
+Avoid names such as:
+
+```java
+ff
+obj
+data
+temp
+flag1
+process()
+```
+
+---
+
+## 18. Configuration
+
+Use `application.yml` or `application.properties` for:
+
+* Database configuration.
+* Server port.
+* JPA configuration.
+* Logging configuration.
+* Cache configuration.
+
+Never hardcode credentials.
+
+Support environment variables for database credentials.
+
+---
+
+## 19. Testing
+
+Create unit and integration tests for the core functionality.
+
+Minimum test coverage should include:
+
+* Create feature flag.
+* Duplicate feature flag validation.
+* Update flag.
+* Delete flag.
+* Environment-specific state.
+* Invalid rollout percentage.
+* 0% rollout.
+* 100% rollout.
+* Deterministic percentage rollout.
+* Change-log creation.
+* Cache invalidation.
+* Not-found errors.
+* Validation errors.
+
+Use:
+
+```text
+JUnit
+Mockito
+Spring Boot Test
+```
+
+---
+
+## 20. README
+
+Create a complete `README.md` for GitHub.
+
+Include:
+
+```text
+# FeatureFlagLite
+
+Project Overview
+Features
+Architecture
+Tech Stack
+Database Schema
+API Documentation
+Example Requests
+Example Responses
+Project Structure
+How to Run
+Environment Variables
+MySQL Setup
+Test Instructions
+Caching Strategy
+Percentage Rollout Logic
+Error Handling
+Future Improvements
+```
+
+Include example commands such as:
+
+```bash
+git clone <repository-url>
+cd featureflaglite
+./mvnw spring-boot:run
+```
+
+Also document how to create the MySQL database.
+
+---
+
+## 21. Deliverables
+
+The final project should contain:
+
+```text
+featureflaglite/
+├── src/
+│   ├── main/
+│   └── test/
+├── pom.xml
+├── README.md
+├── .gitignore
+└── database/
+    └── schema.sql
+```
+
+Also include the simple frontend/test site in an appropriate directory such as:
+
+```text
+frontend/
+├── index.html
+├── style.css
+└── app.js
+```
+
+---
+
+## 22. Important Scope Rule
+
+Keep **FeatureFlagLite intentionally minimal**.
+
+Do NOT add:
+
+* Microservices
+* Kubernetes
+* Kafka
+* Redis cluster
+* OAuth/JWT authentication
+* Complex user/role management
+* Event-driven architecture
+* Distributed configuration systems
+* Unnecessary third-party dependencies
+
+The objective is a **small, clean, optimized Feature Flag service** demonstrating:
+
+```text
+Feature Flags
++ Environment Configuration
++ Percentage Rollout
++ Read API
++ Change History
++ Validation
++ Error Handling
++ Caching
++ Logging
++ Clean Architecture
+```
+
+Build the implementation with production-quality coding practices while keeping the overall project simple and easy to understand.
+
+Act as an expert in technical UX writing and human-centered design. 
+I want you to write copy and messaging for a technical console page. 
+Your goal is to translate complex system data, logs, or metrics into human-friendly language.
+Follow these strict guidelines:
+1.Clarity Over Jargon: Translate raw code, system errors, and complex technical jargon into plain, actionable language. 
+Explain what is happening and why it matters.
+2.Action-Oriented Messaging: Whenever a state, metric, or alert is presented, ensure it immediately highlights the exact next step a human needs to take.
+3.Empathetic & Calm Tone: Keep the tone professional, objective, yet deeply helpful. 
+4.Avoid alarming or accusatory language, especially during critical system failures or high-stress errors.
+5.High Scannability: Prioritize short sentences, clear status indicators, and punchy text so a user can diagnose the system's health in a single glance.
+
+
+I want you to write or rewrite the copy and labels for a technical dashboard. 
+Your job is to take confusing, technical, or system-generated text and convert it into plain, human-friendly language. 
+The goal is to make the UI feel simple, intuitive, and easy to understand for any user, regardless of their technical background. 
+Always prioritize clarity and simplicity over jargon or technical accuracy. 
+Write short, punchy, and straightforward text that improves usability and reduces cognitive load. 
+Do not use technical terms, acronyms, or internal system labels unless they are absolutely unavoidable.
+If a technical term is required, include a brief explanation in parentheses. 
+Avoid legalistic or overly formal language; the tone should be friendly and conversational yet professional. 
+Always focus on the user's perspective and what they need to understand or do next. 
+Keep all text concise and easy to scan. 
+Use simple sentence structures and active voice. 
+Do not generate placeholder text; only produce production-ready copy.
