@@ -87,94 +87,151 @@
         <div class="demo-app-container">
             <!-- ─── Left Canvas: Mock Production Client Web App ─── -->
             <section class="demo-main-canvas">
-                <div class="mock-app-card" id="mockAppCanvas">
-                    <!-- SaaS Chrome Header -->
-                    <div class="mock-app-header">
-                        <div class="mock-app-logo">
-                            <span>APEX<span style="font-weight:300;">CLOUD</span></span>
-                            <span class="mock-app-session-tag text-mono" id="mockAppSessionTag">SESSION: user-123</span>
+                <div class="mock-window-frame" id="mockAppCanvas">
+                    <!-- Window Titlebar with Traffic Light Dots & Realistic URL Bar -->
+                    <div class="mock-window-titlebar">
+                        <div class="window-controls">
+                            <span class="dot close"></span>
+                            <span class="dot minimize"></span>
+                            <span class="dot maximize"></span>
+                        </div>
+                        <div class="window-url-bar">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.6;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                            <span>https://app.apexcloud.io/studio?env=<span id="mockUrlEnv">dev</span>&amp;user=<span id="mockUrlUser">user-123</span></span>
+                        </div>
+                        <div class="window-meta-badges">
+                            <span class="window-badge" id="mockAppEnvIndicator">ENV: DEV</span>
+                            <span class="window-badge" id="mockAppSessionTag">USER: user-123</span>
+                        </div>
+                    </div>
+
+                    <!-- SaaS App Navbar with Brand & Module Navigation Tabs -->
+                    <div class="mock-app-navbar">
+                        <div class="mock-app-brand">
+                            <div class="brand-square"></div>
+                            <span>APEX<span style="font-weight:300;">STUDIO</span></span>
+                        </div>
+                        <div class="mock-nav-tabs">
+                            <button class="mock-tab-btn active" data-tab="all" onclick="switchClientDemoTab('all')">All Modules</button>
+                            <button class="mock-tab-btn" data-tab="search" onclick="switchClientDemoTab('search')">Search Engine</button>
+                            <button class="mock-tab-btn" data-tab="analytics" onclick="switchClientDemoTab('analytics')">Analytics Deck</button>
+                            <button class="mock-tab-btn" data-tab="checkout" onclick="switchClientDemoTab('checkout')">Transactions</button>
+                            <button class="mock-tab-btn" data-tab="compute" onclick="switchClientDemoTab('compute')">Compute Cluster</button>
+                            <button class="mock-tab-btn" data-tab="security" onclick="switchClientDemoTab('security')">Enterprise Security</button>
+                            <button class="mock-tab-btn" data-tab="custom" onclick="switchClientDemoTab('custom')">Directory Flags</button>
                         </div>
                         <div style="display:flex; align-items:center; gap:8px;">
-                            <span class="mock-app-session-tag text-mono" id="mockAppEnvIndicator">ENV: DEV</span>
-                            <button class="btn btn-secondary btn-sm" onclick="toggleLocalTheme()" title="Simulate client-side theme switch or flag toggle">
-                                ◐ Toggle Theme
+                            <button class="btn btn-secondary btn-sm" onclick="toggleLocalTheme()" title="Simulate client-side theme switch or flag toggle" style="font-size:0.75rem; padding:4px 10px;">
+                                ◐ Dark / Light
                             </button>
                         </div>
                     </div>
 
-                    <!-- Feature 1: Search Experience (betaSearch) -->
-                    <div style="margin-bottom: 22px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-                            <span style="font-size:0.7rem; font-family:var(--font-mono); text-transform:uppercase; color:var(--text-muted);">
-                                Feature: Search Architecture [betaSearch]
-                            </span>
-                            <span id="searchFlagStatusBadge" class="badge"></span>
+                    <!-- Mock App Body Containing Modular Feature Cards -->
+                    <div class="mock-app-body" style="padding: 20px;">
+                        <!-- Feature 1: Search Experience (betaSearch) -->
+                        <div class="client-module-card" data-module="search" style="margin-bottom: 22px;">
+                            <div class="client-module-header">
+                                <div>
+                                    <span class="client-module-tag">Module &bull; Core Search</span>
+                                    <h4 style="margin: 3px 0 0 0; font-size: 0.88rem; font-weight: 600;">Search Engine Architecture</h4>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span class="text-mono" style="font-size:0.72rem; color:var(--text-muted);">flag: betaSearch</span>
+                                    <span id="searchFlagStatusBadge" class="badge"></span>
+                                </div>
+                            </div>
+                            <div id="searchFeatureArea">
+                                <!-- Rendered dynamically -->
+                            </div>
                         </div>
-                        <div id="searchFeatureArea">
+
+                        <!-- Feature 2: Analytics Dashboard (newDashboard) -->
+                        <div class="client-module-card" data-module="analytics" style="margin-bottom: 22px;">
+                            <div class="client-module-header">
+                                <div>
+                                    <span class="client-module-tag">Module &bull; Observability</span>
+                                    <h4 style="margin: 3px 0 0 0; font-size: 0.88rem; font-weight: 600;">Telemetry &amp; Executive Metrics</h4>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span class="text-mono" style="font-size:0.72rem; color:var(--text-muted);">flag: newDashboard</span>
+                                    <span id="dashboardFlagStatusBadge" class="badge"></span>
+                                </div>
+                            </div>
+                            <div id="dashboardFeatureArea">
+                                <!-- Rendered dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Feature 3: Checkout System (newCheckout) -->
+                        <div class="client-module-card" data-module="checkout" style="margin-bottom: 22px;">
+                            <div class="client-module-header">
+                                <div>
+                                    <span class="client-module-tag">Module &bull; Commerce</span>
+                                    <h4 style="margin: 3px 0 0 0; font-size: 0.88rem; font-weight: 600;">Transaction Pipeline &amp; Checkout Flow</h4>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span class="text-mono" style="font-size:0.72rem; color:var(--text-muted);">flag: newCheckout (% rollout)</span>
+                                    <span id="checkoutFlagStatusBadge" class="badge"></span>
+                                </div>
+                            </div>
+                            <div id="checkoutFeatureArea">
+                                <!-- Rendered dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Feature 4: Dynamic Resource Manager [TestFlag] (Add / Remove Buttons) -->
+                        <div class="client-module-card" data-module="compute" style="margin-bottom: 22px;">
+                            <div class="client-module-header">
+                                <div>
+                                    <span class="client-module-tag">Module &bull; Infrastructure</span>
+                                    <h4 style="margin: 3px 0 0 0; font-size: 0.88rem; font-weight: 600;">Compute Node Management</h4>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span class="text-mono" style="font-size:0.72rem; color:var(--text-muted);">flag: TestFlag (Add / Remove)</span>
+                                    <span id="resourceFlagStatusBadge" class="badge"></span>
+                                </div>
+                            </div>
+                            <div id="resourceFeatureArea">
+                                <!-- Rendered dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Feature 5: Security & Enterprise Action Buttons -->
+                        <div class="client-module-card" data-module="security" style="margin-bottom: 22px;">
+                            <div class="client-module-header">
+                                <div>
+                                    <span class="client-module-tag">Module &bull; Governance</span>
+                                    <h4 style="margin: 3px 0 0 0; font-size: 0.88rem; font-weight: 600;">Enterprise Controls &amp; Protocol Actions</h4>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span class="text-mono" style="font-size:0.72rem; color:var(--text-muted);">flag: enterpriseFeatures</span>
+                                    <span id="securityActionsStatusBadge" class="badge"></span>
+                                </div>
+                            </div>
+                            <div id="securityActionsArea">
+                                <!-- Rendered dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Feature 6: Theme Engine (darkMode) -->
+                        <div class="client-module-card" data-module="theme" style="margin-bottom: 22px;" id="themeFeatureArea">
                             <!-- Rendered dynamically -->
                         </div>
-                    </div>
 
-                    <!-- Feature 2: Analytics Dashboard (newDashboard) -->
-                    <div style="margin-bottom: 22px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-                            <span style="font-size:0.7rem; font-family:var(--font-mono); text-transform:uppercase; color:var(--text-muted);">
-                                Feature: Analytics Telemetry [newDashboard]
-                            </span>
-                            <span id="dashboardFlagStatusBadge" class="badge"></span>
+                        <!-- Feature 7: Extra / Custom Flags -->
+                        <div class="client-module-card" data-module="custom" id="customFlagsModuleCard" style="margin-bottom: 0;">
+                            <div class="client-module-header">
+                                <div>
+                                    <span class="client-module-tag">Module &bull; Directory Extensions</span>
+                                    <h4 style="margin: 3px 0 0 0; font-size: 0.88rem; font-weight: 600;">Feature Flag Directory Demonstrator</h4>
+                                </div>
+                                <span class="text-mono" style="font-size:0.72rem; color:var(--text-muted);">Real-time Multi-Flag Evaluation</span>
+                            </div>
+                            <div id="customFlagsArea">
+                                <!-- Rendered dynamically -->
+                            </div>
                         </div>
-                        <div id="dashboardFeatureArea">
-                            <!-- Rendered dynamically -->
-                        </div>
-                    </div>
-
-                    <!-- Feature 3: Checkout System (newCheckout) -->
-                    <div style="margin-bottom: 22px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-                            <span style="font-size:0.7rem; font-family:var(--font-mono); text-transform:uppercase; color:var(--text-muted);">
-                                Feature: Checkout Flow [newCheckout &mdash; Percentage Rollout]
-                            </span>
-                            <span id="checkoutFlagStatusBadge" class="badge"></span>
-                        </div>
-                        <div id="checkoutFeatureArea">
-                            <!-- Rendered dynamically -->
-                        </div>
-                    </div>
-
-                    <!-- Feature 4: Dynamic Resource Manager [TestFlag] (Add / Remove Buttons) -->
-                    <div style="margin-bottom: 22px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-                            <span style="font-size:0.7rem; font-family:var(--font-mono); text-transform:uppercase; color:var(--text-muted);">
-                                Feature: Cluster Resource Management [TestFlag &mdash; Add / Remove Controls]
-                            </span>
-                            <span id="resourceFlagStatusBadge" class="badge"></span>
-                        </div>
-                        <div id="resourceFeatureArea">
-                            <!-- Rendered dynamically -->
-                        </div>
-                    </div>
-
-                    <!-- Feature 5: Security & Enterprise Action Buttons -->
-                    <div style="margin-bottom: 22px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-                            <span style="font-size:0.7rem; font-family:var(--font-mono); text-transform:uppercase; color:var(--text-muted);">
-                                Feature: Enterprise Actions &amp; Security Controls
-                            </span>
-                            <span id="securityActionsStatusBadge" class="badge"></span>
-                        </div>
-                        <div id="securityActionsArea">
-                            <!-- Rendered dynamically -->
-                        </div>
-                    </div>
-
-                    <!-- Feature 6: Theme Engine (darkMode) -->
-                    <div style="margin-bottom: 22px;" id="themeFeatureArea">
-                        <!-- Rendered dynamically -->
-                    </div>
-
-                    <!-- Feature 7: Extra / Custom Flags -->
-                    <div id="customFlagsArea">
-                        <!-- Rendered dynamically -->
                     </div>
                 </div>
             </section>

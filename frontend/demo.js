@@ -51,6 +51,7 @@ let realtimeBroadcastChannel = null;
 let realtimeEventCount = 0;
 let lastPolledFlagsHash = '';
 let bannerDismissTimeout = null;
+let currentClientDemoTab = 'all';
 
 let demoClusterNodes = [
     { id: 'node-us-east-1a', region: 'us-east-1', cpu: '2.4 GHz', status: 'Online' },
@@ -94,6 +95,27 @@ function setDemoUser(userId, roleLabel) {
     refreshDemoApp();
 }
 
+function switchClientDemoTab(tabName) {
+    currentClientDemoTab = tabName;
+    document.querySelectorAll('.mock-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === tabName);
+    });
+
+    const cards = document.querySelectorAll('.client-module-card');
+    cards.forEach(card => {
+        const mod = card.getAttribute('data-module');
+        if (tabName === 'all' || mod === tabName) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+function applyClientDemoTabFilter() {
+    switchClientDemoTab(currentClientDemoTab);
+}
+
 async function apiFetch(path, options = {}) {
     const res = await fetch(API_BASE + path, {
         headers: { 'Content-Type': 'application/json', ...options.headers },
@@ -111,9 +133,15 @@ async function refreshDemoApp() {
     const userId = (demoUserIdInput.value || 'user-123').trim();
 
     navEnvBadge.textContent = env.toUpperCase();
-    mockAppSessionTag.textContent = `USER: ${userId}`;
-    mockAppEnvIndicator.textContent = `ENV: ${env.toUpperCase()}`;
+    if (mockAppSessionTag) mockAppSessionTag.textContent = `USER: ${userId}`;
+    if (mockAppEnvIndicator) mockAppEnvIndicator.textContent = `ENV: ${env.toUpperCase()}`;
     inspectorEnvName.textContent = env;
+
+    // Synchronize window mock URL bar
+    const mockUrlEnv = document.getElementById('mockUrlEnv');
+    const mockUrlUser = document.getElementById('mockUrlUser');
+    if (mockUrlEnv) mockUrlEnv.textContent = env;
+    if (mockUrlUser) mockUrlUser.textContent = userId;
 
     try {
         // 1. Fetch raw environment flags
@@ -163,6 +191,9 @@ async function refreshDemoApp() {
         renderFloatingChat(evaluations['liveChatSupport'], env);
         renderCustomFlags(allFlags, evaluations);
         renderInspector(evaluations, userId, env);
+
+        // Apply active module tab filter
+        applyClientDemoTabFilter();
 
     } catch (err) {
         rawJsonResponse.textContent = `// Error connecting to backend: ${err.message}`;
@@ -814,18 +845,30 @@ function renderTheme(evalData, env) {
     }
 
     themeFeatureArea.innerHTML = `
+        <div class="client-module-header">
+            <div>
+                <span class="client-module-tag">Module &bull; Design System</span>
+                <h4 style="margin: 3px 0 0 0; font-size: 0.88rem; font-weight: 600;">Theme Engine &amp; Display Variant</h4>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="text-mono" style="font-size:0.72rem; color:var(--text-muted);">flag: darkMode</span>
+                <span class="badge ${effectiveDark ? 'badge-live' : 'badge-paused'}">
+                    ${effectiveDark ? 'DARK MODE' : 'LIGHT MODE'}
+                </span>
+            </div>
+        </div>
         <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; display:flex; justify-content:space-between; align-items:center;">
             <div>
                 <div style="font-family:var(--font-mono); font-size:0.82rem; font-weight:700;">
-                    THEME ENGINE: <span style="font-weight:400;">${effectiveDark ? 'OLED MONOCHROME DARK' : 'CRISP WHITE LIGHT'}</span>
+                    ACTIVE VARIANT: <span style="font-weight:400;">${effectiveDark ? 'OLED MONOCHROME DARK' : 'CRISP WHITE LIGHT'}</span>
                 </div>
                 <div style="font-size:0.74rem; color:var(--text-secondary); margin-top:2px;">
-                    Controlled by flag <code>darkMode</code> in ${env.toUpperCase()}. ${localThemeOverride !== null ? '(Client local preview active)' : ''}
+                    Controlled dynamically by flag <code>darkMode</code> in ${env.toUpperCase()}. ${localThemeOverride !== null ? '(Client local preview toggle active)' : ''}
                 </div>
             </div>
-            <span class="badge ${effectiveDark ? 'badge-live' : 'badge-paused'}">
-                ${effectiveDark ? 'DARK MODE' : 'LIGHT MODE'}
-            </span>
+            <button class="btn btn-secondary btn-sm" onclick="toggleLocalTheme()">
+                Switch to ${effectiveDark ? 'Light' : 'Dark'} Mode
+            </button>
         </div>
     `;
 }

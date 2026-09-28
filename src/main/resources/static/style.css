@@ -1080,7 +1080,285 @@ tr:hover td {
     top: 76px;
 }
 
-/* Mock App Canvas (Apex Cloud) */
+/* ─── Mock App Canvas (Apex Cloud Studio Window Frame) ─── */
+.mock-window-frame {
+    background: #090909;
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: all 0.25s ease;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.mock-window-titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: #111111;
+    border-bottom: 1px solid #222222;
+    gap: 12px;
+}
+
+.window-controls {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.window-dot,
+.window-controls .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.dot-close, .window-controls .close { background: #ff5f56; }
+.dot-minimize, .window-controls .minimize { background: #ffbd2e; }
+.dot-maximize, .window-controls .maximize { background: #27c93f; }
+
+.window-url-bar {
+    background: #000000;
+    border: 1px solid #242424;
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: #888888;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 440px;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.url-lock-icon {
+    font-size: 0.65rem;
+    color: #ffffff;
+}
+
+.url-protocol-tag {
+    margin-left: auto;
+    font-size: 0.62rem;
+    color: #555555;
+    background: #111111;
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+.window-meta-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.window-status-beacon {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* SaaS Navbar inside App */
+.mock-app-navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    background: #0a0a0a;
+    border-bottom: 1px solid #1a1a1a;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.mock-app-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mock-app-symbol {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #000000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 0.75rem;
+}
+
+.mock-app-name {
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-family: var(--font-mono);
+}
+
+.mock-nav-tabs {
+    display: flex;
+    gap: 4px;
+    background: #141414;
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid #222222;
+    flex-wrap: wrap;
+}
+
+.mock-tab-btn {
+    background: transparent;
+    border: none;
+    color: #888888;
+    font-size: 0.73rem;
+    font-family: var(--font-mono);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.mock-tab-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.mock-tab-btn.active {
+    background: #ffffff;
+    color: #000000;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.mock-nav-user-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #141414;
+    border: 1px solid #242424;
+    padding: 4px 10px;
+    border-radius: 999px;
+}
+
+.mock-user-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #2a2a2a;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+}
+
+.mock-user-name {
+    font-size: 0.73rem;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+}
+
+.mock-app-body {
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.client-module-card {
+    transition: all 0.2s ease;
+}
+
+.client-module-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.client-module-tag {
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+/* Light Mode Theme Overrides for Mock Window */
+.mock-window-frame.mock-app-light {
+    background: #f8f9fa !important;
+    color: #111111 !important;
+    border-color: #d8d8d8 !important;
+}
+
+.mock-window-frame.mock-app-light .mock-window-titlebar {
+    background: #ebebeb !important;
+    border-color: #dcdcdc !important;
+}
+
+.mock-window-frame.mock-app-light .window-url-bar {
+    background: #ffffff !important;
+    border-color: #cccccc !important;
+    color: #333333 !important;
+}
+
+.mock-window-frame.mock-app-light .mock-app-navbar {
+    background: #f0f2f5 !important;
+    border-color: #e0e0e0 !important;
+}
+
+.mock-window-frame.mock-app-light .mock-nav-tabs {
+    background: #e2e5e9 !important;
+    border-color: #cccccc !important;
+}
+
+.mock-window-frame.mock-app-light .mock-tab-btn {
+    color: #555555 !important;
+}
+
+.mock-window-frame.mock-app-light .mock-tab-btn.active {
+    background: #000000 !important;
+    color: #ffffff !important;
+}
+
+.mock-window-frame.mock-app-light .mock-nav-user-pill {
+    background: #ffffff !important;
+    border-color: #d0d0d0 !important;
+}
+
+.mock-window-frame.mock-app-light .mock-user-avatar {
+    background: #e0e0e0 !important;
+    color: #111111 !important;
+}
+
+.mock-window-frame.mock-app-light .mock-kpi-card,
+.mock-window-frame.mock-app-light .mock-chart-container,
+.mock-window-frame.mock-app-light .mock-checkout-box,
+.mock-window-frame.mock-app-light .mock-search-bar,
+.mock-window-frame.mock-app-light .resource-manager-box,
+.mock-window-frame.mock-app-light .feature-action-card {
+    background: #ffffff !important;
+    color: #111111 !important;
+    border-color: #e0e0e0 !important;
+}
+
+.mock-window-frame.mock-app-light .mock-bar {
+    background: #000000 !important;
+}
+
+.mock-window-frame.mock-app-light .mock-search-input {
+    color: #111111 !important;
+}
+
 .mock-app-card {
     background: var(--bg-card);
     border: 1px solid var(--border-strong);
@@ -1088,71 +1366,6 @@ tr:hover td {
     padding: 24px;
     transition: all 0.25s ease;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
-}
-
-.mock-app-light {
-    background: #f7f7f7 !important;
-    color: #111111 !important;
-    border-color: #cccccc !important;
-}
-
-.mock-app-light .mock-app-header,
-.mock-app-light .panel,
-.mock-app-light .mock-kpi-card,
-.mock-app-light .mock-chart-container,
-.mock-app-light .mock-checkout-box,
-.mock-app-light .mock-search-bar {
-    background: #ffffff !important;
-    color: #111111 !important;
-    border-color: #e0e0e0 !important;
-}
-
-.mock-app-light .mock-kpi-lbl,
-.mock-app-light .table-flag-desc,
-.mock-app-light .field-hint {
-    color: #666666 !important;
-}
-
-.mock-app-light .mock-kpi-val {
-    color: #000000 !important;
-}
-
-.mock-app-light .mock-search-input {
-    color: #111111 !important;
-}
-
-.mock-app-light .legacy-table-container {
-    background: #eef2f5 !important;
-    color: #222222 !important;
-    border-color: #d0d7de !important;
-}
-
-.mock-app-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 20px;
-}
-
-.mock-app-logo {
-    font-size: 1.1rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    font-family: var(--font-mono);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.mock-app-session-tag {
-    font-size: 0.72rem;
-    font-family: var(--font-mono);
-    padding: 2px 8px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-secondary);
 }
 
 /* Mock Search Bar */
