@@ -1058,6 +1058,329 @@ tr:hover td {
     }
 }
 
+/* ─── Demo Page Specific Styling ─── */
+.demo-app-container {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(360px, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.demo-main-canvas {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.demo-sidebar-inspector {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: sticky;
+    top: 76px;
+}
+
+/* Mock App Canvas (Apex Cloud) */
+.mock-app-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 24px;
+    transition: all 0.25s ease;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+
+.mock-app-light {
+    background: #f7f7f7 !important;
+    color: #111111 !important;
+    border-color: #cccccc !important;
+}
+
+.mock-app-light .mock-app-header,
+.mock-app-light .panel,
+.mock-app-light .mock-kpi-card,
+.mock-app-light .mock-chart-container,
+.mock-app-light .mock-checkout-box,
+.mock-app-light .mock-search-bar {
+    background: #ffffff !important;
+    color: #111111 !important;
+    border-color: #e0e0e0 !important;
+}
+
+.mock-app-light .mock-kpi-lbl,
+.mock-app-light .table-flag-desc,
+.mock-app-light .field-hint {
+    color: #666666 !important;
+}
+
+.mock-app-light .mock-kpi-val {
+    color: #000000 !important;
+}
+
+.mock-app-light .mock-search-input {
+    color: #111111 !important;
+}
+
+.mock-app-light .legacy-table-container {
+    background: #eef2f5 !important;
+    color: #222222 !important;
+    border-color: #d0d7de !important;
+}
+
+.mock-app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+}
+
+.mock-app-logo {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-family: var(--font-mono);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mock-app-session-tag {
+    font-size: 0.72rem;
+    font-family: var(--font-mono);
+    padding: 2px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-secondary);
+}
+
+/* Mock Search Bar */
+.mock-search-bar {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+}
+
+.mock-search-bar.ai-active {
+    border-color: #ffffff;
+    box-shadow: 0 0 16px rgba(255, 255, 255, 0.15);
+}
+
+.ai-pill {
+    background: #ffffff;
+    color: #000000;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: var(--radius);
+    letter-spacing: 0.05em;
+}
+
+.mock-search-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    width: 100%;
+    font-family: var(--font-sans);
+}
+
+/* Mock Dashboard & KPIs */
+.mock-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.mock-kpi-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mock-kpi-lbl {
+    font-size: 0.68rem;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+}
+
+.mock-kpi-val {
+    font-size: 1.4rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    line-height: 1.1;
+}
+
+.mock-chart-container {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+}
+
+.mock-chart-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 90px;
+    padding-top: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.mock-chart-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    height: 100%;
+    justify-content: flex-end;
+}
+
+.mock-bar {
+    width: 100%;
+    background: #ffffff;
+    border-radius: 2px 2px 0 0;
+    transition: height 0.4s ease;
+    cursor: pointer;
+}
+
+.mock-bar:hover {
+    background: #cccccc;
+}
+
+.mock-day-label {
+    font-size: 0.62rem;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+}
+
+.legacy-table-container {
+    background: #080808;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* Mock Checkout */
+.mock-checkout-box {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.express-checkout-btn {
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #ffffff;
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.15s ease;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
+}
+
+.express-checkout-btn:hover {
+    background: #e2e2e2;
+    transform: translateY(-1px);
+}
+
+.legacy-checkout-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.legacy-step-row {
+    display: flex;
+    gap: 8px;
+}
+
+.legacy-step-row .input {
+    font-size: 0.8rem;
+    padding: 6px 10px;
+}
+
+/* Sidebar Inspector */
+.code-inspector {
+    background: #050505;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    font-family: var(--font-mono);
+    font-size: 0.73rem;
+    color: #cccccc;
+    overflow-x: auto;
+    max-height: 220px;
+    line-height: 1.45;
+}
+
+.inspector-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.inspector-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.inspector-flag-name {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.inspector-explanation {
+    font-size: 0.74rem;
+    color: var(--text-secondary);
+    line-height: 1.35;
+}
+
+.inspector-slot-info {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    padding-top: 4px;
+    margin-top: 2px;
+}
+
 /* ─── Responsive Adjustments ─── */
 @media (max-width: 900px) {
     .metrics-grid {
@@ -1069,6 +1392,12 @@ tr:hover td {
     .user-simulator-controls {
         flex-direction: column;
         align-items: stretch;
+    }
+    .demo-app-container {
+        grid-template-columns: 1fr;
+    }
+    .mock-dashboard-grid {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -1083,3 +1412,4 @@ tr:hover td {
         padding: 16px;
     }
 }
+

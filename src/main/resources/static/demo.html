@@ -3,126 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FeatureFlagLite — Client App Demo</title>
+    <title>FeatureFlagLite — Live Client App Simulation</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- ─── Top Navigation ─── -->
+    <!-- ─── Top Navigation Bar ─── -->
     <header class="nav-header">
         <div class="nav-container">
-            <a href="index.html" class="nav-brand">
-                <span class="brand-icon">⚑</span>
-                <span class="brand-title">FeatureFlagLite</span>
-            </a>
-            <nav class="nav-links">
-                <a href="index.html" class="nav-link">Flag Management</a>
-                <a href="demo.html" class="nav-link active">Live Demo App</a>
+            <div class="nav-left">
+                <a href="index.html" class="nav-brand">
+                    <span class="brand-icon">⚑</span>
+                    <span class="brand-title">FeatureFlagLite</span>
+                    <span class="brand-version">v1.2 Simulation</span>
+                </a>
+                <div class="system-status-indicator" title="Live connection to FeatureFlagLite REST endpoints">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Live API Stream • Latency &lt; 1ms</span>
+                </div>
+            </div>
+
+            <div class="nav-right">
+                <a href="index.html" class="btn btn-secondary btn-sm">
+                    ← Back to Management Console
+                </a>
                 <span class="nav-badge" id="navEnvBadge">DEV</span>
-            </nav>
+            </div>
         </div>
     </header>
 
     <main class="main-wrapper">
-        <!-- ─── Simulation Controls ─── -->
+        <!-- ─── Simulation Controls Bar ─── -->
         <section class="panel">
             <div class="panel-header">
                 <div>
-                    <h2 class="panel-title">Client Simulation Controls</h2>
-                    <p class="panel-desc">Test how a real consumer application adapts to flag states & percentage rollouts across environments.</p>
+                    <h2 class="panel-title">Interactive Client Simulation Controls</h2>
+                    <p class="panel-desc">Observe in real time how a downstream SaaS web application adapts its layout, features, and checkout flows to your feature flag states and percentage rollouts.</p>
                 </div>
-                <a href="index.html" class="btn btn-secondary btn-sm">Manage Flags Console →</a>
+                <a href="index.html" class="btn btn-primary btn-sm">Configure Flags in Console →</a>
             </div>
 
             <div class="controls-bar">
-                <div class="control-item">
-                    <label for="demoEnvSelector">Environment</label>
-                    <select id="demoEnvSelector" class="select">
-                        <option value="dev">DEV</option>
-                        <option value="test">TEST</option>
-                        <option value="prod">PROD</option>
+                <div class="control-item" style="min-width: 220px;">
+                    <label for="demoEnvSelector">Target Environment</label>
+                    <select id="demoEnvSelector" class="select select-env">
+                        <option value="dev">DEV &mdash; Sandbox</option>
+                        <option value="test">TEST &mdash; Staging</option>
+                        <option value="prod">PROD &mdash; Production</option>
                     </select>
                 </div>
 
-                <div class="control-item">
-                    <label for="demoUserIdInput">Test User ID (For Percentage Rollout)</label>
-                    <input type="text" id="demoUserIdInput" class="input input-mono" value="user-123" placeholder="e.g. user-42">
-                    <div class="chip-row">
-                        <span class="chip" onclick="setDemoUser('user-1')">user-1</span>
-                        <span class="chip" onclick="setDemoUser('user-2')">user-2</span>
-                        <span class="chip" onclick="setDemoUser('user-42')">user-42</span>
-                        <span class="chip" onclick="setDemoUser('alice')">alice</span>
-                        <span class="chip" onclick="setDemoUser('bob')">bob</span>
+                <div class="control-item" style="flex: 2;">
+                    <label for="demoUserIdInput">Test User Identifier (Deterministic Rollout Target)</label>
+                    <div class="input-with-button">
+                        <input type="text" id="demoUserIdInput" class="input input-mono" value="user-123" placeholder="e.g. user-123 or user@domain.com">
+                        <button class="btn btn-primary" onclick="refreshDemoApp()">
+                            ↻ Re-Evaluate
+                        </button>
+                    </div>
+                    <div class="chip-row" style="margin-top: 6px;">
+                        <span class="chip" onclick="setDemoUser('developer-alice', 'Internal Developer')">developer-alice (Eng)</span>
+                        <span class="chip" onclick="setDemoUser('qa-bob', 'QA Specialist')">qa-bob (QA)</span>
+                        <span class="chip" onclick="setDemoUser('enterprise-vip', 'Enterprise Customer')">enterprise-vip</span>
+                        <span class="chip" onclick="setDemoUser('beta-tester', 'Early Adopter')">beta-tester</span>
+                        <span class="chip" onclick="setDemoUser('guest-99', 'Anonymous Guest')">guest-99</span>
                     </div>
                 </div>
-
-                <button class="btn btn-primary" onclick="refreshDemoApp()">
-                    ↻ Re-Evaluate
-                </button>
             </div>
         </section>
 
-        <!-- ─── Demo Application + Inspector Grid ─── -->
+        <!-- ─── Two-Column Live Experience ─── -->
         <div class="demo-app-container">
-            <!-- ─── Left: Mock Client Web Application ─── -->
+            <!-- ─── Left Canvas: Mock Production Client Web App ─── -->
             <section class="demo-main-canvas">
-                <div class="panel" id="mockAppCanvas">
-                    <!-- Mock App Header -->
+                <div class="mock-app-card" id="mockAppCanvas">
+                    <!-- SaaS Chrome Header -->
                     <div class="mock-app-header">
-                        <div class="mock-app-logo">APEX<span style="font-weight:300;">CLOUD</span></div>
-                        <div style="font-size:0.75rem; font-family:var(--font-mono); color:var(--text-secondary);" id="mockAppEnvIndicator">
-                            ENV: DEV
+                        <div class="mock-app-logo">
+                            <span>APEX<span style="font-weight:300;">CLOUD</span></span>
+                            <span class="mock-app-session-tag text-mono" id="mockAppSessionTag">SESSION: user-123</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span class="mock-app-session-tag text-mono" id="mockAppEnvIndicator">ENV: DEV</span>
+                            <button class="btn btn-secondary btn-sm" onclick="toggleLocalTheme()" title="Simulate client-side theme switch or flag toggle">
+                                ◐ Toggle Theme
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Search Feature Area (betaSearch) -->
-                    <div style="margin-top: 18px;" id="searchFeatureArea">
+                    <!-- Feature 1: Search Experience (betaSearch) -->
+                    <div style="margin-bottom: 22px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                            <span style="font-size:0.7rem; font-family:var(--font-mono); text-transform:uppercase; color:var(--text-muted);">
+                                Feature: Search Architecture [betaSearch]
+                            </span>
+                            <span id="searchFlagStatusBadge" class="badge"></span>
+                        </div>
+                        <div id="searchFeatureArea">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Feature 2: Analytics Dashboard (newDashboard) -->
+                    <div style="margin-bottom: 22px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                            <span style="font-size:0.7rem; font-family:var(--font-mono); text-transform:uppercase; color:var(--text-muted);">
+                                Feature: Analytics Telemetry [newDashboard]
+                            </span>
+                            <span id="dashboardFlagStatusBadge" class="badge"></span>
+                        </div>
+                        <div id="dashboardFeatureArea">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Feature 3: Checkout System (newCheckout) -->
+                    <div style="margin-bottom: 22px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                            <span style="font-size:0.7rem; font-family:var(--font-mono); text-transform:uppercase; color:var(--text-muted);">
+                                Feature: Checkout Flow [newCheckout &mdash; Percentage Rollout]
+                            </span>
+                            <span id="checkoutFlagStatusBadge" class="badge"></span>
+                        </div>
+                        <div id="checkoutFeatureArea">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Feature 4: Theme Engine (darkMode) -->
+                    <div style="margin-bottom: 22px;" id="themeFeatureArea">
                         <!-- Rendered dynamically -->
                     </div>
 
-                    <!-- Dashboard Feature Area (newDashboard) -->
-                    <div style="margin-top: 24px;" id="dashboardFeatureArea">
-                        <!-- Rendered dynamically -->
-                    </div>
-
-                    <!-- Checkout Feature Area (newCheckout) -->
-                    <div style="margin-top: 24px;" id="checkoutFeatureArea">
-                        <!-- Rendered dynamically -->
-                    </div>
-
-                    <!-- Theme Feature Area (darkMode) -->
-                    <div style="margin-top: 24px;" id="themeFeatureArea">
-                        <!-- Rendered dynamically -->
-                    </div>
-
-                    <!-- Custom / Extra Flags Area -->
-                    <div style="margin-top: 24px;" id="customFlagsArea">
+                    <!-- Feature 5: Extra / Custom Flags -->
+                    <div id="customFlagsArea">
                         <!-- Rendered dynamically -->
                     </div>
                 </div>
             </section>
 
-            <!-- ─── Right: Live API Inspector ─── -->
+            <!-- ─── Right Column: Live Decision Inspector & DevTools ─── -->
             <aside class="demo-sidebar-inspector">
+                <!-- Evaluation Breakdown Card -->
                 <div class="panel">
-                    <h3 class="panel-title" style="margin-bottom: 12px;">Evaluation Details</h3>
-                    <div id="inspectorDetails" class="result-box">
-                        Evaluating flags...
+                    <div class="panel-header" style="margin-bottom: 12px;">
+                        <div>
+                            <h3 class="panel-title" style="font-size: 0.9rem;">Decision Engine Inspector</h3>
+                            <p class="panel-desc">Real-time evaluation results for this user.</p>
+                        </div>
+                        <span class="badge badge-live" id="activeFlagCountPill">0 Active</span>
+                    </div>
+                    <div id="inspectorDetails">
+                        <div class="table-loading">Evaluating flags...</div>
                     </div>
                 </div>
 
+                <!-- Raw REST API Payload -->
                 <div class="panel">
-                    <h3 class="panel-title" style="margin-bottom: 8px;">Raw API Response</h3>
-                    <p class="panel-desc" style="margin-bottom: 12px;">GET /api/v1/flags?environment=<span id="inspectorEnvName">dev</span></p>
+                    <div class="panel-header" style="margin-bottom: 10px;">
+                        <div>
+                            <h3 class="panel-title" style="font-size: 0.85rem;">Raw API Payload</h3>
+                            <p class="panel-desc">GET /api/v1/flags?environment=<span id="inspectorEnvName" class="text-mono">dev</span></p>
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="copyRawJson()">Copy</button>
+                    </div>
                     <pre id="rawJsonResponse" class="code-inspector">Loading JSON...</pre>
                 </div>
 
+                <!-- Rollout Algorithm Card -->
                 <div class="panel" style="font-size: 0.8rem; color: var(--text-secondary);">
-                    <h3 class="panel-title" style="margin-bottom: 8px;">Rollout Logic</h3>
-                    <p style="margin-bottom: 8px;">Rollout is determined deterministically using:</p>
-                    <code style="font-family:var(--font-mono); background:#000; padding:4px 6px; border:1px solid var(--border); display:block; margin-bottom:8px;">
-                        hash(flagName + ":" + userId) % 100
+                    <h3 class="panel-title" style="font-size: 0.85rem; margin-bottom: 8px;">Deterministic Rollout Formula</h3>
+                    <p style="margin-bottom: 8px; font-size: 0.77rem; line-height: 1.4;">
+                        Every user evaluation is calculated deterministically using:
+                    </p>
+                    <code style="font-family:var(--font-mono); background:#050505; color:#ffffff; padding:6px 10px; border:1px solid var(--border); display:block; margin-bottom:8px; border-radius:var(--radius); font-size:0.75rem;">
+                        abs(hash(flagName + ":" + userId)) % 100 &lt; rollout%
                     </code>
-                    <p>The exact same user will always receive the same evaluation for the flag in that environment.</p>
+                    <p style="font-size: 0.77rem; line-height: 1.4;">
+                        ✓ <strong>Zero Session Drift:</strong> Same user always receives the exact same variant across requests.<br>
+                        ✓ <strong>No Database Writes:</strong> Evaluations execute in memory at O(1) speed without state pollution.
+                    </p>
                 </div>
             </aside>
         </div>
