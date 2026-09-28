@@ -1,4 +1,4 @@
-package com.FeatureFlagLite.FeartureFlagSmasher.entity;
+package com.featureflaglite.featureflagsmasher.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -1,27 +1,27 @@
-package com.FeatureFlagLite.FeartureFlagSmasher.service;
+package com.featureflaglite.featureflagsmasher.service;
 
-import com.FeatureFlagLite.FeartureFlagSmasher.config.CacheConfig;
-import com.FeatureFlagLite.FeartureFlagSmasher.dto.ChangeLogResponse;
-import com.FeatureFlagLite.FeartureFlagSmasher.dto.CreateFeatureFlagRequest;
-import com.FeatureFlagLite.FeartureFlagSmasher.dto.EnvironmentFlagsResponse;
-import com.FeatureFlagLite.FeartureFlagSmasher.dto.FeatureFlagResponse;
-import com.FeatureFlagLite.FeartureFlagSmasher.dto.FlagEvaluationResponse;
-import com.FeatureFlagLite.FeartureFlagSmasher.dto.FlagStateResponse;
-import com.FeatureFlagLite.FeartureFlagSmasher.dto.UpdateFeatureFlagRequest;
-import com.FeatureFlagLite.FeartureFlagSmasher.dto.UpdateFlagStateRequest;
-import com.FeatureFlagLite.FeartureFlagSmasher.entity.ChangeLog;
-import com.FeatureFlagLite.FeartureFlagSmasher.entity.Environment;
-import com.FeatureFlagLite.FeartureFlagSmasher.entity.FeatureFlag;
-import com.FeatureFlagLite.FeartureFlagSmasher.entity.FlagState;
-import com.FeatureFlagLite.FeartureFlagSmasher.exception.DuplicateFeatureFlagException;
-import com.FeatureFlagLite.FeartureFlagSmasher.exception.EnvironmentNotFoundException;
-import com.FeatureFlagLite.FeartureFlagSmasher.exception.FeatureFlagNotFoundException;
-import com.FeatureFlagLite.FeartureFlagSmasher.mapper.EntityMapper;
-import com.FeatureFlagLite.FeartureFlagSmasher.repository.ChangeLogRepository;
-import com.FeatureFlagLite.FeartureFlagSmasher.repository.EnvironmentRepository;
-import com.FeatureFlagLite.FeartureFlagSmasher.repository.FeatureFlagRepository;
-import com.FeatureFlagLite.FeartureFlagSmasher.repository.FlagStateRepository;
-import com.FeatureFlagLite.FeartureFlagSmasher.util.RolloutEvaluator;
+import com.featureflaglite.featureflagsmasher.config.CacheConfig;
+import com.featureflaglite.featureflagsmasher.dto.ChangeLogResponse;
+import com.featureflaglite.featureflagsmasher.dto.CreateFeatureFlagRequest;
+import com.featureflaglite.featureflagsmasher.dto.EnvironmentFlagsResponse;
+import com.featureflaglite.featureflagsmasher.dto.FeatureFlagResponse;
+import com.featureflaglite.featureflagsmasher.dto.FlagEvaluationResponse;
+import com.featureflaglite.featureflagsmasher.dto.FlagStateResponse;
+import com.featureflaglite.featureflagsmasher.dto.UpdateFeatureFlagRequest;
+import com.featureflaglite.featureflagsmasher.dto.UpdateFlagStateRequest;
+import com.featureflaglite.featureflagsmasher.entity.ChangeLog;
+import com.featureflaglite.featureflagsmasher.entity.Environment;
+import com.featureflaglite.featureflagsmasher.entity.FeatureFlag;
+import com.featureflaglite.featureflagsmasher.entity.FlagState;
+import com.featureflaglite.featureflagsmasher.exception.DuplicateFeatureFlagException;
+import com.featureflaglite.featureflagsmasher.exception.EnvironmentNotFoundException;
+import com.featureflaglite.featureflagsmasher.exception.FeatureFlagNotFoundException;
+import com.featureflaglite.featureflagsmasher.mapper.EntityMapper;
+import com.featureflaglite.featureflagsmasher.repository.ChangeLogRepository;
+import com.featureflaglite.featureflagsmasher.repository.EnvironmentRepository;
+import com.featureflaglite.featureflagsmasher.repository.FeatureFlagRepository;
+import com.featureflaglite.featureflagsmasher.repository.FlagStateRepository;
+import com.featureflaglite.featureflagsmasher.util.RolloutEvaluator;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -377,8 +377,8 @@ public class FeatureFlagService {
                 flagStateRepository.save(targetState);
 
                 // Record audit log
-                com.FeatureFlagLite.FeartureFlagSmasher.entity.ChangeLog logEntry =
-                        new com.FeatureFlagLite.FeartureFlagSmasher.entity.ChangeLog(
+                com.featureflaglite.featureflagsmasher.entity.ChangeLog logEntry =
+                        new com.featureflaglite.featureflagsmasher.entity.ChangeLog(
                                 targetState.getFeatureFlag(),
                                 targetState.getEnvironment(),
                                 oldEnabled,
@@ -418,8 +418,8 @@ public class FeatureFlagService {
                 state.setRolloutPercentage(0);
                 flagStateRepository.save(state);
 
-                com.FeatureFlagLite.FeartureFlagSmasher.entity.ChangeLog logEntry =
-                        new com.FeatureFlagLite.FeartureFlagSmasher.entity.ChangeLog(
+                com.featureflaglite.featureflagsmasher.entity.ChangeLog logEntry =
+                        new com.featureflaglite.featureflagsmasher.entity.ChangeLog(
                                 state.getFeatureFlag(),
                                 state.getEnvironment(),
                                 oldEnabled,

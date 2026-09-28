@@ -1,38 +1,63 @@
-package com.featureflaglite.featureflagsmasher.domain.model;
+package com.featureflaglite.featureflagsmasher.entity;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 /**
- * Domain entity representing the state of a feature flag within a specific environment.
+ * Represents the state of a feature flag within a specific environment.
  * Each flag has exactly one state per environment.
  */
+@Entity
+@Table(name = "flag_states", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"feature_flag_id", "environment_id"})
+})
 public class FlagState {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "feature_flag_id", nullable = false)
     private FeatureFlag featureFlag;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "environment_id", nullable = false)
     private Environment environment;
+
+    @Column(nullable = false)
     private boolean enabled;
+
+    @Column(name = "rollout_percentage", nullable = false)
     private int rolloutPercentage;
+
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    protected FlagState() {
-        // For JPA
+    public FlagState() {
     }
 
     public FlagState(FeatureFlag featureFlag, Environment environment, boolean enabled, int rolloutPercentage) {
-        this.featureFlag = Objects.requireNonNull(featureFlag, "FeatureFlag cannot be null");
-        this.environment = Objects.requireNonNull(environment, "Environment cannot be null");
+        this.featureFlag = featureFlag;
+        this.environment = environment;
         this.enabled = enabled;
-        this.rolloutPercentage = validateRolloutPercentage(rolloutPercentage);
+        this.rolloutPercentage = rolloutPercentage;
         this.updatedAt = LocalDateTime.now();
     }
 
-    private int validateRolloutPercentage(int percentage) {
-        if (percentage < 0 || percentage > 100) {
-            throw new IllegalArgumentException("Rollout percentage must be between 0 and 100");
-        }
-        return percentage;
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 
     public Long getId() {
@@ -48,8 +73,7 @@ public class FlagState {
     }
 
     public void setFeatureFlag(FeatureFlag featureFlag) {
-        this.featureFlag = Objects.requireNonNull(featureFlag, "FeatureFlag cannot be null");
-        this.updatedAt = LocalDateTime.now();
+        this.featureFlag = featureFlag;
     }
 
     public Environment getEnvironment() {
@@ -57,8 +81,7 @@ public class FlagState {
     }
 
     public void setEnvironment(Environment environment) {
-        this.environment = Objects.requireNonNull(environment, "Environment cannot be null");
-        this.updatedAt = LocalDateTime.now();
+        this.environment = environment;
     }
 
     public boolean isEnabled() {
@@ -67,7 +90,6 @@ public class FlagState {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
-        this.updatedAt = LocalDateTime.now();
     }
 
     public int getRolloutPercentage() {
@@ -75,8 +97,7 @@ public class FlagState {
     }
 
     public void setRolloutPercentage(int rolloutPercentage) {
-        this.rolloutPercentage = validateRolloutPercentage(rolloutPercentage);
-        this.updatedAt = LocalDateTime.now();
+        this.rolloutPercentage = rolloutPercentage;
     }
 
     public LocalDateTime getUpdatedAt() {
@@ -85,33 +106,5 @@ public class FlagState {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
-    }
-
-    public void updateState(boolean enabled, int rolloutPercentage) {
-        this.enabled = enabled;
-        this.rolloutPercentage = validateRolloutPercentage(rolloutPercentage);
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        FlagState that = (FlagState) o;
-        return Objects.equals(id, that.id) &&
-                Objects.equals(featureFlag, that.featureFlag) &&
-                Objects.equals(environment, that.environment);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, featureFlag, environment);
-    }
-
-    @Override
-    public String toString() {
-        return "FlagState{id=" + id + ", flag=" + featureFlag.getName() +
-                ", env=" + environment.getName() + ", enabled=" + enabled +
-                ", rollout=" + rolloutPercentage + "%}";
     }
 }

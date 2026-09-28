@@ -1,47 +1,67 @@
-package com.featureflaglite.featureflagsmasher.domain.model;
+package com.featureflaglite.featureflagsmasher.entity;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 /**
- * Domain entity representing an audit log entry for flag state changes.
+ * Stores the audit trail of flag state changes.
  * Records who changed what, when, and the before/after values.
  */
+@Entity
+@Table(name = "change_logs")
 public class ChangeLog {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "feature_flag_id", nullable = false)
     private FeatureFlag featureFlag;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "environment_id", nullable = false)
     private Environment environment;
+
+    @Column(name = "old_enabled")
     private Boolean oldEnabled;
+
+    @Column(name = "new_enabled", nullable = false)
     private boolean newEnabled;
+
+    @Column(name = "old_rollout_percentage")
     private Integer oldRolloutPercentage;
+
+    @Column(name = "new_rollout_percentage", nullable = false)
     private int newRolloutPercentage;
+
+    @Column(name = "changed_by", nullable = false, length = 100)
     private String changedBy;
+
+    @Column(name = "changed_at", nullable = false)
     private LocalDateTime changedAt;
 
-    protected ChangeLog() {
-        // For JPA
+    public ChangeLog() {
     }
 
-    public ChangeLog(FeatureFlag featureFlag, Environment environment,
-                     Boolean oldEnabled, boolean newEnabled,
-                     Integer oldRolloutPercentage, int newRolloutPercentage,
-                     String changedBy) {
-        this.featureFlag = Objects.requireNonNull(featureFlag, "FeatureFlag cannot be null");
-        this.environment = Objects.requireNonNull(environment, "Environment cannot be null");
+    public ChangeLog(FeatureFlag featureFlag, Environment environment, Boolean oldEnabled, boolean newEnabled,
+                     Integer oldRolloutPercentage, int newRolloutPercentage, String changedBy) {
+        this.featureFlag = featureFlag;
+        this.environment = environment;
         this.oldEnabled = oldEnabled;
         this.newEnabled = newEnabled;
         this.oldRolloutPercentage = oldRolloutPercentage;
-        this.newRolloutPercentage = validateRolloutPercentage(newRolloutPercentage);
-        this.changedBy = Objects.requireNonNull(changedBy, "ChangedBy cannot be null");
+        this.newRolloutPercentage = newRolloutPercentage;
+        this.changedBy = changedBy;
         this.changedAt = LocalDateTime.now();
-    }
-
-    private int validateRolloutPercentage(int percentage) {
-        if (percentage < 0 || percentage > 100) {
-            throw new IllegalArgumentException("Rollout percentage must be between 0 and 100");
-        }
-        return percentage;
     }
 
     public Long getId() {
@@ -57,7 +77,7 @@ public class ChangeLog {
     }
 
     public void setFeatureFlag(FeatureFlag featureFlag) {
-        this.featureFlag = Objects.requireNonNull(featureFlag, "FeatureFlag cannot be null");
+        this.featureFlag = featureFlag;
     }
 
     public Environment getEnvironment() {
@@ -65,7 +85,7 @@ public class ChangeLog {
     }
 
     public void setEnvironment(Environment environment) {
-        this.environment = Objects.requireNonNull(environment, "Environment cannot be null");
+        this.environment = environment;
     }
 
     public Boolean getOldEnabled() {
@@ -97,7 +117,7 @@ public class ChangeLog {
     }
 
     public void setNewRolloutPercentage(int newRolloutPercentage) {
-        this.newRolloutPercentage = validateRolloutPercentage(newRolloutPercentage);
+        this.newRolloutPercentage = newRolloutPercentage;
     }
 
     public String getChangedBy() {
@@ -105,7 +125,7 @@ public class ChangeLog {
     }
 
     public void setChangedBy(String changedBy) {
-        this.changedBy = Objects.requireNonNull(changedBy, "ChangedBy cannot be null");
+        this.changedBy = changedBy;
     }
 
     public LocalDateTime getChangedAt() {
@@ -114,25 +134,5 @@ public class ChangeLog {
 
     public void setChangedAt(LocalDateTime changedAt) {
         this.changedAt = changedAt;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ChangeLog that = (ChangeLog) o;
-        return Objects.equals(id, that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
-    }
-
-    @Override
-    public String toString() {
-        return "ChangeLog{id=" + id + ", flag=" + featureFlag.getName() +
-                ", env=" + environment.getName() + ", newEnabled=" + newEnabled +
-                ", rollout=" + newRolloutPercentage + "%, by=" + changedBy + "}";
     }
 }

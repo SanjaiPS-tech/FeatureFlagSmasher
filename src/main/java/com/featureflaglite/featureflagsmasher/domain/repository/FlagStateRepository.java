@@ -1,27 +1,35 @@
-package com.featureflaglite.featureflagsmasher.domain.repository;
+package com.featureflaglite.featureflagsmasher.repository;
 
-import com.featureflaglite.featureflagsmasher.domain.model.FlagState;
+import com.featureflaglite.featureflagsmasher.entity.FlagState;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
-/**
- * Domain repository interface for FlagState.
- */
-public interface FlagStateRepository {
+@Repository
+public interface FlagStateRepository extends JpaRepository<FlagState, Long> {
 
-    Optional<FlagState> findById(Long id);
+    @Query("SELECT fs FROM FlagState fs " +
+           "JOIN FETCH fs.featureFlag " +
+           "JOIN FETCH fs.environment " +
+           "WHERE fs.environment.name = :environmentName")
+    List<FlagState> findAllByEnvironmentName(@Param("environmentName") String environmentName);
 
-    Optional<FlagState> findByFlagNameAndEnvironmentName(String flagName, String environmentName);
+    @Query("SELECT fs FROM FlagState fs " +
+           "JOIN FETCH fs.featureFlag " +
+           "JOIN FETCH fs.environment " +
+           "WHERE fs.featureFlag.name = :flagName AND fs.environment.name = :environmentName")
+    Optional<FlagState> findByFlagNameAndEnvironmentName(
+            @Param("flagName") String flagName,
+            @Param("environmentName") String environmentName);
 
-    List<FlagState> findAllByEnvironmentName(String environmentName);
-
-    List<FlagState> findAllByFeatureFlagId(Long featureFlagId);
-
-    FlagState save(FlagState flagState);
-
-    void delete(FlagState flagState);
-
-    void deleteById(Long id);
+    @Query("SELECT fs FROM FlagState fs " +
+           "JOIN FETCH fs.featureFlag " +
+           "JOIN FETCH fs.environment " +
+           "WHERE fs.featureFlag.id = :featureFlagId")
+    List<FlagState> findAllByFeatureFlagId(@Param("featureFlagId") Long featureFlagId);
 
     void deleteAllByFeatureFlagId(Long featureFlagId);
 }

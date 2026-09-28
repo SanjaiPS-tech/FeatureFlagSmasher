@@ -1,52 +1,73 @@
-package com.featureflaglite.featureflagsmasher.application.service;
+package com.featureflaglite.featureflagsmasher.service;
 
-import com.featureflaglite.featureflagsmasher.application.mapper.EntityMapper;
-import com.featureflaglite.featureflagsmasher.application.query.GetAllFeatureFlagsQuery;
-import com.featureflaglite.featureflagsmasher.application.query.GetFeatureFlagByIdQuery;
-import com.featureflaglite.featureflagsmasher.application.query.GetFeatureFlagByNameQuery;
-import com.featureflaglite.featureflagsmasher.application.query.GetFlagStatesQuery;
-import com.featureflaglite.featureflagsmasher.application.command.CreateFeatureFlagCommand;
-import com.featureflaglite.featureflagsmasher.application.command.DeleteFeatureFlagCommand;
-import com.featureflaglite.featureflagsmasher.application.command.UpdateFeatureFlagCommand;
-import com.featureflaglite.featureflagsmasher.application.command.UpdateFlagStateCommand;
-import com.featureflaglite.featureflagsmasher.domain.model.ChangeLog;
-import com.featureflaglite.featureflagsmasher.domain.model.Environment;
-import com.featureflaglite.featureflagsmasher.domain.model.FeatureFlag;
-import com.featureflaglite.featureflagsmasher.domain.model.FlagState;
-import com.featureflaglite.featureflagsmasher.domain.repository.ChangeLogRepository;
-import com.featureflaglite.featureflagsmasher.domain.repository.EnvironmentRepository;
-import com.featureflaglite.featureflagsmasher.domain.repository.FeatureFlagRepository;
-import com.featureflaglite.featureflagsmasher.domain.repository.FlagStateRepository;
+import com.featureflaglite.featureflagsmasher.config.CacheConfig;
+import com.featureflaglite.featureflagsmasher.dto.ChangeLogResponse;
+import com.featureflaglite.featureflagsmasher.dto.CreateFeatureFlagRequest;
+import com.featureflaglite.featureflagsmasher.dto.EnvironmentFlagsResponse;
+import com.featureflaglite.featureflagsmasher.dto.FeatureFlagResponse;
+import com.featureflaglite.featureflagsmasher.dto.FlagEvaluationResponse;
+import com.featureflaglite.featureflagsmasher.dto.FlagStateResponse;
+import com.featureflaglite.featureflagsmasher.dto.UpdateFeatureFlagRequest;
+import com.featureflaglite.featureflagsmasher.dto.UpdateFlagStateRequest;
+import com.featureflaglite.featureflagsmasher.entity.ChangeLog;
+import com.featureflaglite.featureflagsmasher.entity.Environment;
+import com.featureflaglite.featureflagsmasher.entity.FeatureFlag;
+import com.featureflaglite.featureflagsmasher.entity.FlagState;
+import com.featureflaglite.featureflagsmasher.exception.DuplicateFeatureFlagException;
+import com.featureflaglite.featureflagsmasher.exception.EnvironmentNotFoundException;
+import com.featureflaglite.featureflagsmasher.exception.FeatureFlagNotFoundException;
+import com.featureflaglite.featureflagsmasher.mapper.EntityMapper;
+import com.featureflaglite.featureflagsmasher.repository.ChangeLogRepository;
+import com.featureflaglite.featureflagsmasher.repository.EnvironmentRepository;
+import com.featureflaglite.featureflagsmasher.repository.FeatureFlagRepository;
+import com.featureflaglite.featureflagsmasher.repository.FlagStateRepository;
+import com.featureflaglite.featureflagsmasher.util.RolloutEvaluator;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.LinkedHashMap;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Application service containing all business logic for feature flag management.
- * This is the use case layer that orchestrates domain objects and repositories.
+ * Core service containing all business logic for feature flag management.
  */
+@Service
 public class FeatureFlagService {
+
+    private static final Logger log = LoggerFactory.getLogger(FeatureFlagService.class);
 
     private final FeatureFlagRepository featureFlagRepository;
     private final EnvironmentRepository environmentRepository;
     private final FlagStateRepository flagStateRepository;
     private final ChangeLogRepository changeLogRepository;
+    private final FlagEventPublisher flagEventPublisher;
 
     public FeatureFlagService(FeatureFlagRepository featureFlagRepository,
-                              EnvironmentRepository environmentRepository,
-                              FlagStateRepository flagStateRepository,
-                              ChangeLogRepository changeLogRepository) {
-        this.featureFlagRepository = Objects.requireNonNull(featureFlagRepository);
-        this.environmentRepository = Objects.requireNonNull(environmentRepository);
-        this.flagStateRepository = Objects.requireNonNull(flagStateRepository);
-        this.changeLogRepository = Objects.requireNonNull(changeLogRepository);
+                               EnvironmentRepository environmentRepository,
+                               FlagStateRepository flagStateRepository,
+                               ChangeLogRepository changeLogRepository,
+                               FlagEventPublisher flagEventPublisher) {
+        this.featureFlagRepository = featureFlagRepository;
+        this.environmentRepository = environmentRepository;
+        this.flagStateRepository = flagStateRepository;
+        this.changeLogRepository = changeLogRepository;
+        this.flagEventPublisher = flagEventPublisher;
     }
 
-    // Feature Flag CRUD operations
-    
+    // ──────────────────────────────────────────────
+    // Feature Flag CRUD
+    // ──────────────────────────────────────────────
+
+    /**
+     * Creates a new feature flag and initializes its state across all environments.
+     */
+    @Transactional
+    @CacheEvict(value = {CacheConfig.CACHE_ENVIRONMENT_FLAGS, CacheConfig.CACHE_FLAG_STATES}, allEntries = true)
     public FeatureFlagResponse createFeatureFlag(CreateFeatureFlagRequest request) {
         if (featureFlagRepository.existsByName(request.getName())) {
             throw new DuplicateFeatureFlagException(
@@ -74,35 +95,56 @@ public class FeatureFlagService {
             flagStateRepository.save(flagState);
         }
 
+        log.info("Feature flag created: name={}, defaultState={}", featureFlag.getName(), featureFlag.isDefaultState());
+        flagEventPublisher.broadcastFlagChange("FLAG_CREATED", featureFlag.getName(), "*", Map.of(
+                "id", featureFlag.getId(),
+                "defaultState", featureFlag.isDefaultState()
+        ));
         return EntityMapper.toFeatureFlagResponse(featureFlag);
     }
 
+    /**
+     * Retrieves a feature flag by its ID.
+     */
+    @Transactional(readOnly = true)
     public FeatureFlagResponse getFeatureFlagById(Long id) {
         FeatureFlag flag = featureFlagRepository.findById(id)
                 .orElseThrow(() -> new FeatureFlagNotFoundException("Feature flag not found with id: " + id));
         return EntityMapper.toFeatureFlagResponse(flag);
     }
 
+    /**
+     * Retrieves a feature flag by its name.
+     */
+    @Transactional(readOnly = true)
     public FeatureFlagResponse getFeatureFlagByName(String name) {
         FeatureFlag flag = featureFlagRepository.findByName(name)
                 .orElseThrow(() -> new FeatureFlagNotFoundException("Feature flag not found: " + name));
         return EntityMapper.toFeatureFlagResponse(flag);
     }
 
+    /**
+     * Retrieves all feature flags.
+     */
+    @Transactional(readOnly = true)
     public List<FeatureFlagResponse> getAllFeatureFlags() {
         return featureFlagRepository.findAll().stream()
                 .map(EntityMapper::toFeatureFlagResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
+    /**
+     * Updates a feature flag's metadata (name, description, defaultState).
+     */
+    @Transactional
+    @CacheEvict(value = {CacheConfig.CACHE_ENVIRONMENT_FLAGS, CacheConfig.CACHE_FLAG_STATES}, allEntries = true)
     public FeatureFlagResponse updateFeatureFlag(Long id, UpdateFeatureFlagRequest request) {
         FeatureFlag flag = featureFlagRepository.findById(id)
                 .orElseThrow(() -> new FeatureFlagNotFoundException("Feature flag not found with id: " + id));
 
         if (request.getName() != null && !request.getName().isBlank()) {
             // Check uniqueness if name is changing
-            if (!flag.getName().equals(request.getName()) && 
-                    featureFlagRepository.existsByName(request.getName())) {
+            if (!flag.getName().equals(request.getName()) && featureFlagRepository.existsByName(request.getName())) {
                 throw new DuplicateFeatureFlagException(
                         "Feature flag with name '" + request.getName() + "' already exists");
             }
@@ -118,9 +160,19 @@ public class FeatureFlagService {
         }
 
         flag = featureFlagRepository.save(flag);
+        log.info("Feature flag updated: id={}, name={}", flag.getId(), flag.getName());
+        flagEventPublisher.broadcastFlagChange("FLAG_UPDATED", flag.getName(), "*", Map.of(
+                "id", flag.getId(),
+                "defaultState", flag.isDefaultState()
+        ));
         return EntityMapper.toFeatureFlagResponse(flag);
     }
 
+    /**
+     * Deletes a feature flag and all associated states and change logs.
+     */
+    @Transactional
+    @CacheEvict(value = {CacheConfig.CACHE_ENVIRONMENT_FLAGS, CacheConfig.CACHE_FLAG_STATES}, allEntries = true)
     public void deleteFeatureFlag(Long id) {
         FeatureFlag flag = featureFlagRepository.findById(id)
                 .orElseThrow(() -> new FeatureFlagNotFoundException("Feature flag not found with id: " + id));
@@ -128,10 +180,23 @@ public class FeatureFlagService {
         changeLogRepository.deleteAllByFeatureFlagId(id);
         flagStateRepository.deleteAllByFeatureFlagId(id);
         featureFlagRepository.delete(flag);
+
+        log.info("Feature flag deleted: id={}, name={}", id, flag.getName());
+        flagEventPublisher.broadcastFlagChange("FLAG_DELETED", flag.getName(), "*", Map.of(
+                "id", id
+        ));
     }
 
+    // ──────────────────────────────────────────────
     // Flag State Management
-    
+    // ──────────────────────────────────────────────
+
+    /**
+     * Updates the state of a flag within a specific environment.
+     * Records the change in the audit log.
+     */
+    @Transactional
+    @CacheEvict(value = {CacheConfig.CACHE_ENVIRONMENT_FLAGS, CacheConfig.CACHE_FLAG_STATES}, allEntries = true)
     public FlagStateResponse updateFlagState(String flagName, UpdateFlagStateRequest request) {
         FeatureFlag featureFlag = featureFlagRepository.findByName(flagName)
                 .orElseThrow(() -> new FeatureFlagNotFoundException("Feature flag not found: " + flagName));
@@ -140,8 +205,8 @@ public class FeatureFlagService {
                 .orElseThrow(() -> new EnvironmentNotFoundException(
                         "Environment not found: " + request.getEnvironment()));
 
-        FlagState flagState = flagStateRepository.findByFlagNameAndEnvironmentName(
-                flagName, request.getEnvironment())
+        FlagState flagState = flagStateRepository
+                .findByFlagNameAndEnvironmentName(flagName, request.getEnvironment())
                 .orElse(new FlagState(featureFlag, environment, false, 0));
 
         // Record the change log before applying updates
@@ -162,20 +227,42 @@ public class FeatureFlagService {
         flagState.setUpdatedAt(LocalDateTime.now());
         flagState = flagStateRepository.save(flagState);
 
+        log.info("Flag state changed: flag={}, env={}, enabled={}, rollout={}%, changedBy={}",
+                flagName, request.getEnvironment(), request.isEnabled(),
+                request.getRolloutPercentage(), request.getChangedBy());
+
+        flagEventPublisher.broadcastFlagChange("STATE_CHANGED", flagName, request.getEnvironment(), Map.of(
+                "enabled", request.isEnabled(),
+                "rolloutPercentage", request.getRolloutPercentage(),
+                "changedBy", request.getChangedBy()
+        ));
+
         return EntityMapper.toFlagStateResponse(flagState);
     }
 
+    /**
+     * Gets all flag states for a specific flag across all environments.
+     */
+    @Transactional(readOnly = true)
     public List<FlagStateResponse> getFlagStates(String flagName) {
         FeatureFlag flag = featureFlagRepository.findByName(flagName)
                 .orElseThrow(() -> new FeatureFlagNotFoundException("Feature flag not found: " + flagName));
 
         return flagStateRepository.findAllByFeatureFlagId(flag.getId()).stream()
                 .map(EntityMapper::toFlagStateResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
+    // ──────────────────────────────────────────────
     // Read / Evaluate API
-    
+    // ──────────────────────────────────────────────
+
+    /**
+     * Retrieves all flag states for a given environment.
+     * Cached for performance since this is a frequently called read endpoint.
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(value = CacheConfig.CACHE_ENVIRONMENT_FLAGS, key = "#environmentName")
     public EnvironmentFlagsResponse getFlagsForEnvironment(String environmentName) {
         if (!environmentRepository.existsByName(environmentName)) {
             throw new EnvironmentNotFoundException("Environment not found: " + environmentName);
@@ -188,9 +275,16 @@ public class FeatureFlagService {
             flags.put(state.getFeatureFlag().getName(), state.isEnabled());
         }
 
+        log.debug("Retrieved flags for environment: {}, count={}", environmentName, flags.size());
         return new EnvironmentFlagsResponse(environmentName, flags);
     }
 
+    /**
+     * Evaluates a flag for a specific user using deterministic percentage rollout.
+     * Cached for performance.
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(value = CacheConfig.CACHE_FLAG_STATES, key = "#flagName + ':' + #environmentName + ':' + #userId")
     public FlagEvaluationResponse evaluateFlag(String flagName, String environmentName, String userId) {
         if (!environmentRepository.existsByName(environmentName)) {
             throw new EnvironmentNotFoundException("Environment not found: " + environmentName);
@@ -201,6 +295,7 @@ public class FeatureFlagService {
                         "Flag state not found for flag '" + flagName + "' in environment '" + environmentName + "'"));
 
         boolean isEnabled = flagState.isEnabled();
+
         int rolloutPercentage = flagState.getRolloutPercentage();
         int bucket = (userId != null && !userId.isBlank()) ? RolloutEvaluator.getBucket(flagName, userId) : 0;
 
@@ -211,24 +306,21 @@ public class FeatureFlagService {
 
         String explanation;
         if (!flagState.isEnabled()) {
-            explanation = "Feature is turned off for " + environmentName.toUpperCase() + 
-                    ". All users receive the fallback baseline experience.";
+            explanation = "Feature is turned off for " + environmentName.toUpperCase() + ". All users receive the fallback baseline experience.";
         } else if (userId == null || userId.isBlank()) {
             explanation = "Evaluated against general environment state (no specific user supplied). State is active.";
         } else if (rolloutPercentage >= 100) {
-            explanation = "Active for 100% of traffic. Every user in " + environmentName.toUpperCase() + 
-                    " receives this feature.";
+            explanation = "Active for 100% of traffic. Every user in " + environmentName.toUpperCase() + " receives this feature.";
         } else if (rolloutPercentage <= 0) {
             explanation = "Rollout is set to 0%. Feature is safely held in reserve.";
         } else if (isEnabled) {
-            explanation = "User '" + userId + "' mapped to hash slot " + bucket + 
-                    " (within the " + rolloutPercentage + "% rollout boundary: 0-" + (rolloutPercentage - 1) + 
-                    "). Granted access.";
+            explanation = "User '" + userId + "' mapped to hash slot " + bucket + " (within the " + rolloutPercentage + "% rollout boundary: 0-" + (rolloutPercentage - 1) + "). Granted access.";
         } else {
-            explanation = "User '" + userId + "' mapped to hash slot " + bucket + 
-                    " (above the " + rolloutPercentage + "% rollout boundary: " + rolloutPercentage + "-99). " +
-                    "Retained on standard fallback.";
+            explanation = "User '" + userId + "' mapped to hash slot " + bucket + " (above the " + rolloutPercentage + "% rollout boundary: " + rolloutPercentage + "-99). Retained on standard fallback.";
         }
+
+        log.debug("Flag evaluated: flag={}, env={}, userId={}, enabled={}, bucket={}",
+                flagName, environmentName, userId, isEnabled, bucket);
 
         return new FlagEvaluationResponse(
                 flagName,
@@ -240,6 +332,10 @@ public class FeatureFlagService {
         );
     }
 
+    /**
+     * Evaluates all registered feature flags for a specific user in an environment.
+     */
+    @Transactional(readOnly = true)
     public List<FlagEvaluationResponse> evaluateAllFlagsForUser(String environmentName, String userId) {
         if (!environmentRepository.existsByName(environmentName)) {
             throw new EnvironmentNotFoundException("Environment not found: " + environmentName);
@@ -248,9 +344,14 @@ public class FeatureFlagService {
         List<FeatureFlag> flags = featureFlagRepository.findAll();
         return flags.stream()
                 .map(flag -> evaluateFlag(flag.getName(), environmentName, userId))
-                .collect(Collectors.toList());
+                .toList();
     }
 
+    /**
+     * Promotes and syncs all flag configurations from a source environment to a target environment.
+     */
+    @Transactional
+    @CacheEvict(value = {CacheConfig.CACHE_ENVIRONMENT_FLAGS, CacheConfig.CACHE_FLAG_STATES}, allEntries = true)
     public int syncEnvironmentStates(String sourceEnv, String targetEnv, String changedBy) {
         if (!environmentRepository.existsByName(sourceEnv)) {
             throw new EnvironmentNotFoundException("Source environment not found: " + sourceEnv);
@@ -276,23 +377,30 @@ public class FeatureFlagService {
                 flagStateRepository.save(targetState);
 
                 // Record audit log
-                ChangeLog logEntry = new ChangeLog(
-                        targetState.getFeatureFlag(),
-                        targetState.getEnvironment(),
-                        oldEnabled,
-                        src.isEnabled(),
-                        oldRollout,
-                        src.getRolloutPercentage(),
-                        changedBy != null ? changedBy : "admin"
-                );
+                com.featureflaglite.featureflagsmasher.entity.ChangeLog logEntry =
+                        new com.featureflaglite.featureflagsmasher.entity.ChangeLog(
+                                targetState.getFeatureFlag(),
+                                targetState.getEnvironment(),
+                                oldEnabled,
+                                src.isEnabled(),
+                                oldRollout,
+                                src.getRolloutPercentage(),
+                                changedBy != null ? changedBy : "admin"
+                        );
                 changeLogRepository.save(logEntry);
                 syncedCount++;
             }
         }
 
+        log.info("Synced {} flags from {} to {} by {}", syncedCount, sourceEnv, targetEnv, changedBy);
         return syncedCount;
     }
 
+    /**
+     * Emergency Killswitch: Disables all flags in an environment.
+     */
+    @Transactional
+    @CacheEvict(value = {CacheConfig.CACHE_ENVIRONMENT_FLAGS, CacheConfig.CACHE_FLAG_STATES}, allEntries = true)
     public int emergencyKillswitch(String environmentName, String changedBy) {
         if (!environmentRepository.existsByName(environmentName)) {
             throw new EnvironmentNotFoundException("Environment not found: " + environmentName);
@@ -310,25 +418,34 @@ public class FeatureFlagService {
                 state.setRolloutPercentage(0);
                 flagStateRepository.save(state);
 
-                ChangeLog logEntry = new ChangeLog(
-                        state.getFeatureFlag(),
-                        state.getEnvironment(),
-                        oldEnabled,
-                        false,
-                        oldRollout,
-                        0,
-                        changedBy != null ? changedBy : "admin-killswitch"
-                );
+                com.featureflaglite.featureflagsmasher.entity.ChangeLog logEntry =
+                        new com.featureflaglite.featureflagsmasher.entity.ChangeLog(
+                                state.getFeatureFlag(),
+                                state.getEnvironment(),
+                                oldEnabled,
+                                false,
+                                oldRollout,
+                                0,
+                                changedBy != null ? changedBy : "admin-killswitch"
+                        );
                 changeLogRepository.save(logEntry);
                 pausedCount++;
             }
         }
 
+        log.warn("Emergency Killswitch triggered for environment {}: {} flags paused by {}",
+                environmentName, pausedCount, changedBy);
         return pausedCount;
     }
 
+    // ──────────────────────────────────────────────
     // Change History
-    
+    // ──────────────────────────────────────────────
+
+    /**
+     * Retrieves the change history for a specific flag.
+     */
+    @Transactional(readOnly = true)
     public List<ChangeLogResponse> getChangeHistory(String flagName) {
         if (!featureFlagRepository.existsByName(flagName)) {
             throw new FeatureFlagNotFoundException("Feature flag not found: " + flagName);
@@ -336,20 +453,39 @@ public class FeatureFlagService {
 
         return changeLogRepository.findAllByFeatureFlagName(flagName).stream()
                 .map(EntityMapper::toChangeLogResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
+    /**
+     * Retrieves all change history across the entire system.
+     */
+    @Transactional(readOnly = true)
     public List<ChangeLogResponse> getAllChangeHistory() {
         return changeLogRepository.findAllRecentLogs().stream()
                 .map(EntityMapper::toChangeLogResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
+    /**
+     * Invalidate all in-memory caches.
+     */
+    @CacheEvict(value = {CacheConfig.CACHE_ENVIRONMENT_FLAGS, CacheConfig.CACHE_FLAG_STATES}, allEntries = true)
+    public void purgeAllCaches() {
+        log.info("Administrative cache purge executed: all in-memory caches evicted.");
+        flagEventPublisher.broadcastFlagChange("CACHE_PURGED", "*", "*", Map.of());
+    }
+
+    // ──────────────────────────────────────────────
     // Environments
-    
+    // ──────────────────────────────────────────────
+
+    /**
+     * Returns all available environments.
+     */
+    @Transactional(readOnly = true)
     public List<String> getAllEnvironments() {
         return environmentRepository.findAll().stream()
                 .map(Environment::getName)
-                .collect(Collectors.toList());
+                .toList();
     }
 }

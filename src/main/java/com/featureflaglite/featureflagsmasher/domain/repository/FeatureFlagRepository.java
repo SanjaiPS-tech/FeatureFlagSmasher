@@ -1,26 +1,14 @@
-package com.featureflaglite.featureflagsmasher.domain.repository;
+package com.featureflaglite.featureflagsmasher.repository;
 
-import com.featureflaglite.featureflagsmasher.domain.model.FeatureFlag;
-import java.util.List;
+import com.featureflaglite.featureflagsmasher.entity.FeatureFlag;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-/**
- * Domain repository interface for FeatureFlag.
- * Defines the contract without any framework dependencies.
- */
-public interface FeatureFlagRepository {
-
-    Optional<FeatureFlag> findById(Long id);
+@Repository
+public interface FeatureFlagRepository extends JpaRepository<FeatureFlag, Long> {
 
     Optional<FeatureFlag> findByName(String name);
 
-    List<FeatureFlag> findAll();
-
     boolean existsByName(String name);
-
-    FeatureFlag save(FeatureFlag featureFlag);
-
-    void delete(FeatureFlag featureFlag);
-
-    void deleteById(Long id);
 }

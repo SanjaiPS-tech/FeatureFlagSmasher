@@ -1,25 +1,14 @@
-package com.featureflaglite.featureflagsmasher.domain.repository;
+package com.featureflaglite.featureflagsmasher.repository;
 
-import com.featureflaglite.featureflagsmasher.domain.model.Environment;
-import java.util.List;
+import com.featureflaglite.featureflagsmasher.entity.Environment;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-/**
- * Domain repository interface for Environment.
- */
-public interface EnvironmentRepository {
-
-    Optional<Environment> findById(Long id);
+@Repository
+public interface EnvironmentRepository extends JpaRepository<Environment, Long> {
 
     Optional<Environment> findByName(String name);
 
-    List<Environment> findAll();
-
     boolean existsByName(String name);
-
-    Environment save(Environment environment);
-
-    void delete(Environment environment);
-
-    void deleteById(Long id);
 }

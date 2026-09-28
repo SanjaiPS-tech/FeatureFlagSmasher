@@ -1,30 +1,58 @@
-package com.featureflaglite.featureflagsmasher.domain.model;
+package com.featureflaglite.featureflagsmasher.entity;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 /**
- * Domain entity representing a feature flag.
- * Pure domain model with no framework dependencies.
+ * Represents a feature flag definition with a name, description, and default state.
  */
+@Entity
+@Table(name = "feature_flags")
 public class FeatureFlag {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false, unique = true, length = 100)
     private String name;
+
+    @Column(length = 500)
     private String description;
+
+    @Column(name = "default_state", nullable = false)
     private boolean defaultState;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    protected FeatureFlag() {
-        // For JPA
+    public FeatureFlag() {
     }
 
     public FeatureFlag(String name, String description, boolean defaultState) {
-        this.name = Objects.requireNonNull(name, "Flag name cannot be null");
+        this.name = name;
         this.description = description;
         this.defaultState = defaultState;
+    }
+
+    @PrePersist
+    protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -41,8 +69,7 @@ public class FeatureFlag {
     }
 
     public void setName(String name) {
-        this.name = Objects.requireNonNull(name, "Flag name cannot be null");
-        this.updatedAt = LocalDateTime.now();
+        this.name = name;
     }
 
     public String getDescription() {
@@ -51,7 +78,6 @@ public class FeatureFlag {
 
     public void setDescription(String description) {
         this.description = description;
-        this.updatedAt = LocalDateTime.now();
     }
 
     public boolean isDefaultState() {
@@ -60,7 +86,6 @@ public class FeatureFlag {
 
     public void setDefaultState(boolean defaultState) {
         this.defaultState = defaultState;
-        this.updatedAt = LocalDateTime.now();
     }
 
     public LocalDateTime getCreatedAt() {
@@ -77,27 +102,5 @@ public class FeatureFlag {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
-    }
-
-    public void touch() {
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        FeatureFlag that = (FeatureFlag) o;
-        return Objects.equals(id, that.id) && Objects.equals(name, that.name);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, name);
-    }
-
-    @Override
-    public String toString() {
-        return "FeatureFlag{id=" + id + ", name='" + name + "', defaultState=" + defaultState + "}";
     }
 }

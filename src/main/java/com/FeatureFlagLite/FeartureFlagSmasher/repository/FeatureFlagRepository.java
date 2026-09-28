@@ -1,6 +1,6 @@
-package com.FeatureFlagLite.FeartureFlagSmasher.repository;
+package com.featureflaglite.featureflagsmasher.repository;
 
-import com.FeatureFlagLite.FeartureFlagSmasher.entity.FeatureFlag;
+import com.featureflaglite.featureflagsmasher.entity.FeatureFlag;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

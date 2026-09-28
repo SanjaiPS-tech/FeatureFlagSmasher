@@ -1,21 +1,31 @@
-package com.featureflaglite.featureflagsmasher.domain.model;
+package com.featureflaglite.featureflagsmasher.entity;
 
-import java.util.Objects;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 /**
- * Domain entity representing a deployment environment.
+ * Represents a deployment environment (dev, test, prod).
  */
+@Entity
+@Table(name = "environments")
 public class Environment {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false, unique = true, length = 50)
     private String name;
 
-    protected Environment() {
-        // For JPA
+    public Environment() {
     }
 
     public Environment(String name) {
-        this.name = Objects.requireNonNull(name, "Environment name cannot be null");
+        this.name = name;
     }
 
     public Long getId() {
@@ -31,24 +41,6 @@ public class Environment {
     }
 
     public void setName(String name) {
-        this.name = Objects.requireNonNull(name, "Environment name cannot be null");
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Environment that = (Environment) o;
-        return Objects.equals(id, that.id) && Objects.equals(name, that.name);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, name);
-    }
-
-    @Override
-    public String toString() {
-        return "Environment{id=" + id + ", name='" + name + "'}";
+        this.name = name;
     }
 }

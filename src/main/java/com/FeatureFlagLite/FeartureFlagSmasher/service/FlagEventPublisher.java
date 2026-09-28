@@ -1,4 +1,4 @@
-package com.FeatureFlagLite.FeartureFlagSmasher.service;
+package com.featureflaglite.featureflagsmasher.service;
 
 import java.io.IOException;
 import java.util.List;
