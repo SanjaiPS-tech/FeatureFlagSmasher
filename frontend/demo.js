@@ -22,16 +22,33 @@ const dashboardFlagStatusBadge = document.getElementById('dashboardFlagStatusBad
 const checkoutFeatureArea = document.getElementById('checkoutFeatureArea');
 const checkoutFlagStatusBadge = document.getElementById('checkoutFlagStatusBadge');
 
+const resourceFeatureArea = document.getElementById('resourceFeatureArea');
+const resourceFlagStatusBadge = document.getElementById('resourceFlagStatusBadge');
+
+const securityActionsArea = document.getElementById('securityActionsArea');
+const securityActionsStatusBadge = document.getElementById('securityActionsStatusBadge');
+
 const themeFeatureArea = document.getElementById('themeFeatureArea');
 const customFlagsArea = document.getElementById('customFlagsArea');
 const inspectorDetails = document.getElementById('inspectorDetails');
 const rawJsonResponse = document.getElementById('rawJsonResponse');
 const inspectorEnvName = document.getElementById('inspectorEnvName');
 const activeFlagCountPill = document.getElementById('activeFlagCountPill');
+const floatingChatWidget = document.getElementById('floatingChatWidget');
 
 // Internal Demo State
 let localThemeOverride = null; // null = use flag, true = dark, false = light
 let lastEvaluations = {};
+let demoClusterNodes = [
+    { id: 'node-us-east-1a', region: 'us-east-1', cpu: '2.4 GHz', status: 'Online' },
+    { id: 'node-us-east-1b', region: 'us-east-1', cpu: '2.4 GHz', status: 'Online' },
+    { id: 'node-eu-central-1', region: 'eu-central-1', cpu: '3.1 GHz', status: 'Online' }
+];
+let nodeCounter = 4;
+let chatDrawerOpen = false;
+let chatMessages = [
+    { sender: 'bot', text: 'Hello! Live support AI is online. How can we help you with your feature flag configuration or deployment today?' }
+];
 
 document.addEventListener('DOMContentLoaded', () => {
     // Check URL parameters for env or userId
@@ -126,7 +143,10 @@ async function refreshDemoApp() {
         renderSearch(evaluations['betaSearch']);
         renderDashboard(evaluations['newDashboard']);
         renderCheckout(evaluations['newCheckout'], userId, env);
+        renderAddRemoveResources(evaluations['TestFlag'] || evaluations['TestF'], env);
+        renderSecurityAndEnterprise(evaluations, env);
         renderTheme(evaluations['darkMode'], env);
+        renderFloatingChat(evaluations['liveChatSupport'], env);
         renderCustomFlags(allFlags, evaluations);
         renderInspector(evaluations, userId, env);
 
@@ -140,6 +160,8 @@ async function refreshDemoApp() {
 // Component 1: Search Experience (betaSearch)
 // ──────────────────────────────────────────────
 
+let lastSearchResult = null;
+
 function renderSearch(evalData) {
     const isAiOn = evalData ? evalData.enabled : false;
 
@@ -150,13 +172,16 @@ function renderSearch(evalData) {
         searchFeatureArea.innerHTML = `
             <div class="mock-search-bar ai-active">
                 <span class="ai-pill">AI</span>
-                <input type="text" id="mockAiInput" class="mock-search-input" placeholder="Ask AI: 'Filter active flags or summarize telemetry...'" onkeydown="if(event.key==='Enter') executeAiSearch()">
-                <button class="btn btn-primary btn-sm" onclick="executeAiSearch()">Ask AI</button>
+                <input type="text" id="mockSearchInput" class="mock-search-input" placeholder="Ask AI: 'Filter active flags or summarize telemetry...'" onkeydown="if(event.key==='Enter') executeSearch('ai')">
+                <button class="btn btn-primary btn-sm" onclick="executeSearch('ai')">🔍 Ask AI</button>
             </div>
             <div class="chip-row" style="margin-top:8px;">
                 <span class="chip" onclick="applyAiSuggestion('Audit recent flag updates')">✨ Audit recent changes</span>
                 <span class="chip" onclick="applyAiSuggestion('Show revenue growth trends')">✨ Show revenue trends</span>
                 <span class="chip" onclick="applyAiSuggestion('Find 100% rollout flags')">✨ Find 100% rollouts</span>
+            </div>
+            <div id="searchResultArea" style="margin-top:8px;">
+                ${lastSearchResult ? lastSearchResult : ''}
             </div>
         `;
     } else {
@@ -166,26 +191,66 @@ function renderSearch(evalData) {
         searchFeatureArea.innerHTML = `
             <div class="mock-search-bar">
                 <span style="color:var(--text-muted); font-size:0.8rem;">🔍</span>
-                <input type="text" class="mock-search-input" placeholder="Standard search by exact keyword..." onkeydown="if(event.key==='Enter') showToast('Keyword search executed')">
-                <button class="btn btn-secondary btn-sm" onclick="showToast('Keyword query submitted.')">Search</button>
+                <input type="text" id="mockSearchInput" class="mock-search-input" placeholder="Standard search by exact keyword..." onkeydown="if(event.key==='Enter') executeSearch('keyword')">
+                <button class="btn btn-secondary btn-sm" onclick="executeSearch('keyword')">🔍 Search</button>
             </div>
             <div style="font-size:0.71rem; color:var(--text-muted); margin-top:4px; font-family:var(--font-mono);">
                 Standard keyword search active. Enable 'betaSearch' in the console to unlock AI semantic capabilities.
+            </div>
+            <div id="searchResultArea" style="margin-top:8px;">
+                ${lastSearchResult ? lastSearchResult : ''}
             </div>
         `;
     }
 }
 
 function applyAiSuggestion(text) {
-    const input = document.getElementById('mockAiInput');
+    const input = document.getElementById('mockSearchInput');
     if (input) input.value = text;
-    showToast(`AI Semantic Analysis: "${text}"`);
+    executeSearch('ai');
 }
 
-function executeAiSearch() {
-    const input = document.getElementById('mockAiInput');
-    const q = input ? input.value.trim() : 'Active flags query';
-    showToast(`AI Model generated instant answer for: "${q || 'System analysis'}"`);
+function executeSearch(mode) {
+    const input = document.getElementById('mockSearchInput');
+    const q = input ? input.value.trim() : '';
+    const query = q || (mode === 'ai' ? 'Audit recent flag updates' : 'production');
+
+    if (mode === 'ai') {
+        lastSearchResult = `
+            <div style="background:var(--bg-card); border:1px solid var(--border-strong); border-radius:var(--radius); padding:10px 12px; font-size:0.78rem; animation:toastSlideIn 0.15s ease;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <span style="font-weight:700; font-family:var(--font-mono); font-size:0.75rem;">✨ AI Semantic Result for: "${escapeHtml(query)}"</span>
+                    <button class="btn btn-secondary btn-sm" style="padding:1px 6px; font-size:0.65rem;" onclick="clearSearchResult()">✕</button>
+                </div>
+                <div style="color:var(--text-secondary); line-height:1.4;">
+                    Identified 15 registered flags across DEV, TEST, PROD. <strong>100% Rollouts</strong>: darkMode, newDashboard. <strong>Gradual Rollouts</strong>: newCheckout (50%), liveChatSupport (50% in TEST). Deterministic hash buckets active for user.
+                </div>
+            </div>
+        `;
+        showToast(`AI Model generated answer for: "${query}"`);
+    } else {
+        lastSearchResult = `
+            <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:10px 12px; font-size:0.78rem; animation:toastSlideIn 0.15s ease;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <span style="font-weight:700; font-family:var(--font-mono); font-size:0.75rem;">Exact Keyword Matches for: "${escapeHtml(query)}"</span>
+                    <button class="btn btn-secondary btn-sm" style="padding:1px 6px; font-size:0.65rem;" onclick="clearSearchResult()">✕</button>
+                </div>
+                <div style="color:var(--text-muted); font-family:var(--font-mono); font-size:0.72rem;">
+                    [MATCH 1] flag: production_safeguards &bull; [MATCH 2] env: PROD &bull; status: 200 OK
+                </div>
+            </div>
+        `;
+        showToast(`Keyword query executed for: "${query}"`);
+    }
+
+    const container = document.getElementById('searchResultArea');
+    if (container) container.innerHTML = lastSearchResult;
+}
+
+function clearSearchResult() {
+    lastSearchResult = null;
+    const container = document.getElementById('searchResultArea');
+    if (container) container.innerHTML = '';
 }
 
 // ──────────────────────────────────────────────
@@ -362,7 +427,365 @@ function executeStandardCheckout() {
 }
 
 // ──────────────────────────────────────────────
-// Component 4: Theme Engine (darkMode)
+// Component 4: Resource Manager [TestFlag] (Add / Remove Buttons)
+// ──────────────────────────────────────────────
+
+function renderAddRemoveResources(evalData, env) {
+    const isUnlocked = evalData ? evalData.enabled : false;
+
+    if (isUnlocked) {
+        resourceFlagStatusBadge.className = 'badge badge-live';
+        resourceFlagStatusBadge.textContent = 'Active (Add/Remove Unlocked)';
+
+        const nodeCardsHtml = demoClusterNodes.map(node => `
+            <div class="resource-card" id="card-${node.id}">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <span class="resource-card-name">${escapeHtml(node.id)}</span>
+                    <button class="btn btn-secondary btn-sm" style="padding:1px 5px; font-size:0.65rem;" onclick="removeSpecificDemoNode('${escapeAttr(node.id)}')" title="Remove this node">✕</button>
+                </div>
+                <div class="resource-card-type">${escapeHtml(node.region)} &bull; ${escapeHtml(node.cpu)}</div>
+                <div style="font-size:0.65rem; color:#ffffff; font-family:var(--font-mono); margin-top:3px;">
+                    ● ${escapeHtml(node.status)}
+                </div>
+            </div>
+        `).join('');
+
+        resourceFeatureArea.innerHTML = `
+            <div class="resource-manager-box">
+                <div class="resource-toolbar">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <button class="btn btn-primary btn-sm" onclick="addDemoNode()">
+                            + Add Node
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="removeLatestDemoNode()" ${demoClusterNodes.length === 0 ? 'disabled' : ''}>
+                            &minus; Remove Node
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="resetDemoNodes()" title="Reset nodes to default cluster baseline">
+                            ↻ Reset
+                        </button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span class="badge badge-granted" id="nodeCountBadge">${demoClusterNodes.length} Online Nodes</span>
+                        <span style="font-size:0.72rem; color:var(--text-muted); font-family:var(--font-mono);">FLAG: TestFlag ON</span>
+                    </div>
+                </div>
+
+                <div class="resource-cards-grid" id="clusterNodesGrid">
+                    ${demoClusterNodes.length > 0 ? nodeCardsHtml : '<div style="grid-column: 1 / -1; font-size:0.76rem; color:var(--text-muted); padding:12px; text-align:center;">No nodes in cluster. Click "+ Add Node" to scale up resources.</div>'}
+                </div>
+
+                <div style="font-size:0.71rem; font-family:var(--font-mono); color:var(--text-secondary); line-height:1.4;">
+                    ✓ Dynamic cluster scaling controls unlocked by feature flag <code>TestFlag</code>. Developers can safely provision and deprovision nodes in real-time.
+                </div>
+            </div>
+        `;
+    } else {
+        resourceFlagStatusBadge.className = 'badge badge-paused';
+        resourceFlagStatusBadge.textContent = 'Locked (TestFlag OFF)';
+
+        resourceFeatureArea.innerHTML = `
+            <div class="resource-manager-box" style="opacity: 0.85;">
+                <div class="resource-toolbar">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <button class="btn btn-secondary btn-sm" disabled style="opacity:0.4; cursor:not-allowed;">
+                            + Add Node (Locked)
+                        </button>
+                        <button class="btn btn-secondary btn-sm" disabled style="opacity:0.4; cursor:not-allowed;">
+                            &minus; Remove Node (Locked)
+                        </button>
+                    </div>
+                    <span class="badge badge-fallback">READ-ONLY CLUSTER</span>
+                </div>
+
+                <div style="background:var(--bg-card); border:1px dashed var(--border); padding:12px 14px; border-radius:var(--radius); font-size:0.75rem; color:var(--text-secondary); line-height:1.4;">
+                    🔒 <strong>Add / Remove Resource buttons are currently disabled.</strong><br>
+                    The feature flag <code>TestFlag</code> is turned <strong>OFF</strong> in <code>${env.toUpperCase()}</code>. Cluster scaling permissions are restricted to prevent accidental deprovisioning. Enable <code>TestFlag</code> in the console or inspector to unlock dynamic resource buttons.
+                </div>
+            </div>
+        `;
+    }
+}
+
+function addDemoNode() {
+    const regions = ['us-east-1', 'us-west-2', 'eu-west-1', 'ap-southeast-1'];
+    const randomRegion = regions[Math.floor(Math.random() * regions.length)];
+    const newNode = {
+        id: `node-${randomRegion.substring(0, 7)}-${nodeCounter++}`,
+        region: randomRegion,
+        cpu: (2.0 + Math.random() * 2.0).toFixed(1) + ' GHz',
+        status: 'Online'
+    };
+    demoClusterNodes.push(newNode);
+    showToast(`✓ Provisioned resource node: ${newNode.id} (${newNode.region})`);
+    renderAddRemoveResources(lastEvaluations['TestFlag'] || lastEvaluations['TestF'], demoEnvSelector.value);
+}
+
+function removeLatestDemoNode() {
+    if (demoClusterNodes.length === 0) {
+        showToast('No resource nodes available to remove', true);
+        return;
+    }
+    const removed = demoClusterNodes.pop();
+    showToast(`&minus; Terminated resource node: ${removed.id}`);
+    renderAddRemoveResources(lastEvaluations['TestFlag'] || lastEvaluations['TestF'], demoEnvSelector.value);
+}
+
+function removeSpecificDemoNode(nodeId) {
+    demoClusterNodes = demoClusterNodes.filter(n => n.id !== nodeId);
+    showToast(`&minus; Removed specific node: ${nodeId}`);
+    renderAddRemoveResources(lastEvaluations['TestFlag'] || lastEvaluations['TestF'], demoEnvSelector.value);
+}
+
+function resetDemoNodes() {
+    demoClusterNodes = [
+        { id: 'node-us-east-1a', region: 'us-east-1', cpu: '2.4 GHz', status: 'Online' },
+        { id: 'node-us-east-1b', region: 'us-east-1', cpu: '2.4 GHz', status: 'Online' },
+        { id: 'node-eu-central-1', region: 'eu-central-1', cpu: '3.1 GHz', status: 'Online' }
+    ];
+    showToast('Reset cluster nodes to standard baseline.');
+    renderAddRemoveResources(lastEvaluations['TestFlag'] || lastEvaluations['TestF'], demoEnvSelector.value);
+}
+
+// ──────────────────────────────────────────────
+// Component 5: Enterprise Actions & Security Controls
+// ──────────────────────────────────────────────
+
+let aiSummaryOpen = false;
+
+function renderSecurityAndEnterprise(evaluations, env) {
+    const isPdfOn = evaluations['exportToPdf'] ? evaluations['exportToPdf'].enabled : false;
+    const isAiSummOn = evaluations['aiTelemetrySummarizer'] ? evaluations['aiTelemetrySummarizer'].enabled : false;
+    const is2faOn = evaluations['twoFactorAuth'] ? evaluations['twoFactorAuth'].enabled : false;
+    const isBiometricOn = evaluations['biometricFaceUnlock'] ? evaluations['biometricFaceUnlock'].enabled : false;
+    const isSsoOn = evaluations['ssoEnterpriseOkta'] ? evaluations['ssoEnterpriseOkta'].enabled : false;
+    const isCollabOn = evaluations['realtimeCollaboration'] ? evaluations['realtimeCollaboration'].enabled : false;
+    const isChatOn = evaluations['liveChatSupport'] ? evaluations['liveChatSupport'].enabled : false;
+
+    const activeEnterpriseFlags = [isPdfOn, isAiSummOn, is2faOn, isBiometricOn, isSsoOn, isCollabOn, isChatOn].filter(Boolean).length;
+    securityActionsStatusBadge.className = activeEnterpriseFlags > 0 ? 'badge badge-live' : 'badge badge-paused';
+    securityActionsStatusBadge.textContent = `${activeEnterpriseFlags} Active Policies`;
+
+    securityActionsArea.innerHTML = `
+        <div class="feature-actions-grid">
+            <!-- Action 1: Export PDF (exportToPdf) -->
+            <div class="feature-action-card">
+                <div class="feature-action-title">
+                    <span>📄 Audit PDF Export</span>
+                    <span class="badge ${isPdfOn ? 'badge-live' : 'badge-paused'}" style="font-size:0.62rem;">${isPdfOn ? 'READY' : 'OFF'}</span>
+                </div>
+                <div class="feature-action-desc">
+                    Generates encrypted board-ready compliance reports and flag audit logs.
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="exportPdfReport()" ${isPdfOn ? '' : 'disabled style="opacity:0.4; cursor:not-allowed;"'}>
+                    ${isPdfOn ? 'Export PDF Report' : 'Export Disabled (Flag Off)'}
+                </button>
+            </div>
+
+            <!-- Action 2: AI Telemetry Summarizer (aiTelemetrySummarizer) -->
+            <div class="feature-action-card">
+                <div class="feature-action-title">
+                    <span>✨ AI Telemetry Summary</span>
+                    <span class="badge ${isAiSummOn ? 'badge-live' : 'badge-paused'}" style="font-size:0.62rem;">${isAiSummOn ? 'GENAI' : 'OFF'}</span>
+                </div>
+                <div class="feature-action-desc">
+                    Synthesizes cluster metrics, traffic spikes, and rollout anomalies.
+                </div>
+                <button class="btn ${isAiSummOn ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="triggerAiTelemetrySummary()" ${isAiSummOn ? '' : 'disabled style="opacity:0.4; cursor:not-allowed;"'}>
+                    ${isAiSummOn ? '✨ Generate AI Summary' : 'AI Summary (Flag Off)'}
+                </button>
+            </div>
+
+            <!-- Action 3: Live Chat Support Button (liveChatSupport) -->
+            <div class="feature-action-card">
+                <div class="feature-action-title">
+                    <span>💬 Live Chat Support</span>
+                    <span class="badge ${isChatOn ? 'badge-live' : 'badge-paused'}" style="font-size:0.62rem;">${isChatOn ? 'ONLINE' : 'OFF'}</span>
+                </div>
+                <div class="feature-action-desc">
+                    Instant 24/7 technical assistance and intelligent query resolution.
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="openChatFromButton()" ${isChatOn ? '' : 'disabled style="opacity:0.4; cursor:not-allowed;"'}>
+                    ${isChatOn ? '💬 Open Live Chat' : 'Chat Offline (Flag Off)'}
+                </button>
+            </div>
+
+            <!-- Action 4: Security Identity & Access (twoFactorAuth / biometricFaceUnlock / ssoEnterpriseOkta) -->
+            <div class="feature-action-card">
+                <div class="feature-action-title">
+                    <span>🔐 Enterprise Auth</span>
+                    <span class="badge ${is2faOn || isBiometricOn || isSsoOn ? 'badge-live' : 'badge-paused'}" style="font-size:0.62rem;">
+                        ${is2faOn ? '2FA' : (isSsoOn ? 'SSO' : (isBiometricOn ? 'BIO' : 'BASIC'))}
+                    </span>
+                </div>
+                <div class="feature-action-desc">
+                    Multi-factor authentication, hardware WebAuthn passkeys, and Okta SAML.
+                </div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <button class="btn btn-secondary btn-sm" onclick="verifyTwoFactor()" ${is2faOn ? '' : 'disabled style="opacity:0.4; cursor:not-allowed;"'} title="twoFactorAuth flag">
+                        ${is2faOn ? 'Verify 2FA' : '2FA (Off)'}
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="authenticateBiometric()" ${isBiometricOn ? '' : 'disabled style="opacity:0.4; cursor:not-allowed;"'} title="biometricFaceUnlock flag">
+                        ${isBiometricOn ? 'Passkey' : 'Passkey (Off)'}
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="launchSsoOkta()" ${isSsoOn ? '' : 'disabled style="opacity:0.4; cursor:not-allowed;"'} title="ssoEnterpriseOkta flag">
+                        ${isSsoOn ? 'Okta SSO' : 'SSO (Off)'}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        ${aiSummaryOpen ? `
+            <div style="margin-top:10px; background:var(--bg-surface); border:1px solid var(--border-strong); border-radius:var(--radius); padding:14px; animation:toastSlideIn 0.2s ease;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <span style="font-family:var(--font-mono); font-size:0.8rem; font-weight:700;">✨ AI Telemetry Intelligence Briefing</span>
+                    <button class="btn btn-secondary btn-sm" style="padding:1px 6px; font-size:0.68rem;" onclick="toggleAiSummaryBox()">✕ Close</button>
+                </div>
+                <p style="font-size:0.77rem; color:var(--text-secondary); line-height:1.45; margin:0;">
+                    <strong>Executive Synthesis:</strong> System uptime over the past 30 days remains exceptional at <strong>99.98%</strong> with peak throughput reaching <strong>14.2K requests/second</strong> on Sunday. Express checkout rollout has driven a <strong>+24.8% increase in conversion velocity</strong>. No critical anomalies or rate-limit violations observed.
+                </p>
+            </div>
+        ` : ''}
+    `;
+}
+
+function exportPdfReport() {
+    showToast('📄 Audit Report PDF generated! Download initiated (42 KB).');
+}
+
+function triggerAiTelemetrySummary() {
+    aiSummaryOpen = !aiSummaryOpen;
+    renderSecurityAndEnterprise(lastEvaluations, demoEnvSelector.value);
+    showToast(aiSummaryOpen ? '✨ AI Telemetry Summary synthesized in 12ms.' : 'AI Summary hidden.');
+}
+
+function toggleAiSummaryBox() {
+    aiSummaryOpen = false;
+    renderSecurityAndEnterprise(lastEvaluations, demoEnvSelector.value);
+}
+
+function verifyTwoFactor() {
+    showToast('🔐 2FA TOTP token verified. Hardware session certified.');
+}
+
+function authenticateBiometric() {
+    showToast('👁 WebAuthn biometric passkey validated in 6ms.');
+}
+
+function launchSsoOkta() {
+    showToast('🏢 Authenticated via Okta Enterprise SSO (SAML 2.0).');
+}
+
+function openChatFromButton() {
+    chatDrawerOpen = true;
+    renderFloatingChat(lastEvaluations['liveChatSupport'], demoEnvSelector.value);
+    setTimeout(() => {
+        const inp = document.getElementById('chatInputBox');
+        if (inp) inp.focus();
+    }, 100);
+}
+
+// ──────────────────────────────────────────────
+// Component 6: Floating Support Chat Widget (liveChatSupport)
+// ──────────────────────────────────────────────
+
+function renderFloatingChat(evalData, env) {
+    const isChatOn = evalData ? evalData.enabled : false;
+
+    if (!isChatOn) {
+        floatingChatWidget.innerHTML = `
+            <div style="position:fixed; bottom:20px; right:20px; font-size:0.72rem; color:var(--text-muted); background:var(--bg-surface); border:1px solid var(--border); padding:6px 12px; border-radius:999px; z-index:1500; font-family:var(--font-mono); opacity:0.75;">
+                Live Chat Offline (liveChatSupport OFF)
+            </div>
+        `;
+        return;
+    }
+
+    const messagesHtml = chatMessages.map(m => `
+        <div class="chat-msg ${m.sender === 'user' ? 'chat-msg-user' : 'chat-msg-bot'}">
+            ${escapeHtml(m.text)}
+        </div>
+    `).join('');
+
+    floatingChatWidget.innerHTML = `
+        <!-- Floating Chat Button -->
+        <button class="floating-chat-btn" id="floatingChatBtn" onclick="toggleChatDrawer()" title="Click to toggle live support chat">
+            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#000000; box-shadow:0 0 6px #000000;"></span>
+            <span>💬 Live Support Chat</span>
+        </button>
+
+        <!-- Floating Chat Drawer -->
+        ${chatDrawerOpen ? `
+            <div class="chat-widget-drawer" id="chatDrawer">
+                <div class="chat-widget-header">
+                    <div class="chat-widget-title">
+                        <span>💬</span>
+                        <span>Apex Instant Support AI</span>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" style="padding:2px 8px; font-size:0.7rem;" onclick="toggleChatDrawer()">✕</button>
+                </div>
+
+                <div class="chat-widget-body" id="chatBody">
+                    ${messagesHtml}
+                </div>
+
+                <div class="chat-widget-input-row">
+                    <input type="text" id="chatInputBox" class="chat-widget-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+                    <button class="btn btn-primary btn-sm" onclick="sendChatMessage()">Send</button>
+                </div>
+            </div>
+        ` : ''}
+    `;
+
+    if (chatDrawerOpen) {
+        setTimeout(() => {
+            const body = document.getElementById('chatBody');
+            if (body) body.scrollTop = body.scrollHeight;
+        }, 50);
+    }
+}
+
+function toggleChatDrawer() {
+    chatDrawerOpen = !chatDrawerOpen;
+    renderFloatingChat(lastEvaluations['liveChatSupport'], demoEnvSelector.value);
+    if (chatDrawerOpen) {
+        setTimeout(() => {
+            const inp = document.getElementById('chatInputBox');
+            if (inp) inp.focus();
+        }, 80);
+    }
+}
+
+function sendChatMessage() {
+    const input = document.getElementById('chatInputBox');
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    chatMessages.push({ sender: 'user', text });
+    input.value = '';
+    renderFloatingChat(lastEvaluations['liveChatSupport'], demoEnvSelector.value);
+
+    // Automated smart bot reply
+    setTimeout(() => {
+        let reply = "I understand your query! All feature flags for this session are currently synchronized with the FeatureFlagLite API.";
+        const lower = text.toLowerCase();
+        if (lower.includes('flag') || lower.includes('toggle')) {
+            reply = "You can toggle any flag in real time using the Decision Engine Inspector on the right, or via the Management Console.";
+        } else if (lower.includes('search') || lower.includes('find')) {
+            reply = "Search behavior is managed by the 'betaSearch' flag. When enabled, it provides AI semantic query capabilities.";
+        } else if (lower.includes('node') || lower.includes('add') || lower.includes('remove') || lower.includes('resource')) {
+            reply = "Cluster scaling controls are managed by 'TestFlag'. Turn it ON to unlock the dynamic '+ Add Node' and '− Remove Node' toolbar.";
+        } else if (lower.includes('checkout') || lower.includes('buy') || lower.includes('pay')) {
+            reply = "Checkout flow adapts based on 'newCheckout' percentage rollout. Users in the active rollout tier receive 1-click buy.";
+        }
+
+        chatMessages.push({ sender: 'bot', text: reply });
+        renderFloatingChat(lastEvaluations['liveChatSupport'], demoEnvSelector.value);
+    }, 350);
+}
+
+// ──────────────────────────────────────────────
+// Component 7: Theme Engine (darkMode)
 // ──────────────────────────────────────────────
 
 function renderTheme(evalData, env) {
@@ -409,7 +832,11 @@ function toggleLocalTheme() {
 // ──────────────────────────────────────────────
 
 function renderCustomFlags(allFlags, evaluations) {
-    const standardFlags = new Set(['newDashboard', 'darkMode', 'newCheckout', 'betaSearch']);
+    const standardFlags = new Set([
+        'newDashboard', 'darkMode', 'newCheckout', 'betaSearch',
+        'TestFlag', 'liveChatSupport', 'exportToPdf', 'aiTelemetrySummarizer',
+        'twoFactorAuth', 'biometricFaceUnlock', 'ssoEnterpriseOkta', 'realtimeCollaboration'
+    ]);
     const customFlags = allFlags.filter(f => !standardFlags.has(f.name));
 
     if (customFlags.length === 0) {

@@ -129,12 +129,38 @@
                         </div>
                     </div>
 
-                    <!-- Feature 4: Theme Engine (darkMode) -->
+                    <!-- Feature 4: Dynamic Resource Manager [TestFlag] (Add / Remove Buttons) -->
+                    <div style="margin-bottom: 22px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                            <span style="font-size:0.7rem; font-family:var(--font-mono); text-transform:uppercase; color:var(--text-muted);">
+                                Feature: Cluster Resource Management [TestFlag &mdash; Add / Remove Controls]
+                            </span>
+                            <span id="resourceFlagStatusBadge" class="badge"></span>
+                        </div>
+                        <div id="resourceFeatureArea">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Feature 5: Security & Enterprise Action Buttons -->
+                    <div style="margin-bottom: 22px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                            <span style="font-size:0.7rem; font-family:var(--font-mono); text-transform:uppercase; color:var(--text-muted);">
+                                Feature: Enterprise Actions &amp; Security Controls
+                            </span>
+                            <span id="securityActionsStatusBadge" class="badge"></span>
+                        </div>
+                        <div id="securityActionsArea">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Feature 6: Theme Engine (darkMode) -->
                     <div style="margin-bottom: 22px;" id="themeFeatureArea">
                         <!-- Rendered dynamically -->
                     </div>
 
-                    <!-- Feature 5: Extra / Custom Flags -->
+                    <!-- Feature 7: Extra / Custom Flags -->
                     <div id="customFlagsArea">
                         <!-- Rendered dynamically -->
                     </div>
@@ -186,6 +212,11 @@
             </aside>
         </div>
     </main>
+
+    <!-- ─── Floating Live Chat Widget (liveChatSupport) ─── -->
+    <div id="floatingChatWidget">
+        <!-- Rendered dynamically depending on liveChatSupport flag -->
+    </div>
 
     <!-- ─── Toast Container ─── -->
     <div id="toastContainer" class="toast-container"></div>

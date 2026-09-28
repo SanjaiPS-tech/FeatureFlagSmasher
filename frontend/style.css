@@ -1381,6 +1381,201 @@ tr:hover td {
     margin-top: 2px;
 }
 
+/* ─── Floating Chat Widget (liveChatSupport) ─── */
+.floating-chat-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #ffffff;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.82rem;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.8);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 1500;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.floating-chat-btn:hover {
+    background: #e2e2e2;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(255, 255, 255, 0.2);
+}
+
+.chat-widget-drawer {
+    position: fixed;
+    bottom: 76px;
+    right: 24px;
+    width: 350px;
+    height: 420px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    z-index: 1500;
+    overflow: hidden;
+    animation: toastSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chat-widget-header {
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-widget-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chat-widget-body {
+    flex: 1;
+    padding: 14px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 0.8rem;
+}
+
+.chat-msg {
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    max-width: 85%;
+    line-height: 1.4;
+}
+
+.chat-msg-bot {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    align-self: flex-start;
+}
+
+.chat-msg-user {
+    background: #ffffff;
+    color: #000000;
+    font-weight: 500;
+    align-self: flex-end;
+}
+
+.chat-widget-input-row {
+    border-top: 1px solid var(--border);
+    padding: 10px;
+    background: var(--bg-surface);
+    display: flex;
+    gap: 8px;
+}
+
+.chat-widget-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    font-size: 0.8rem;
+    outline: none;
+}
+
+.chat-widget-input:focus {
+    border-color: var(--border-strong);
+}
+
+/* ─── Resource Manager (TestFlag Add/Remove) ─── */
+.resource-manager-box {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.resource-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.resource-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+}
+
+.resource-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    animation: toastSlideIn 0.15s ease;
+}
+
+.resource-card-name {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.resource-card-type {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+}
+
+/* ─── Feature Actions & Security Badges ─── */
+.feature-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.feature-action-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.feature-action-title {
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.feature-action-desc {
+    font-size: 0.73rem;
+    color: var(--text-secondary);
+    line-height: 1.35;
+}
+
 /* ─── Responsive Adjustments ─── */
 @media (max-width: 900px) {
     .metrics-grid {
