@@ -45,15 +45,18 @@ public class FeatureFlagService {
     private final EnvironmentRepository environmentRepository;
     private final FlagStateRepository flagStateRepository;
     private final ChangeLogRepository changeLogRepository;
+    private final FlagEventPublisher flagEventPublisher;
 
     public FeatureFlagService(FeatureFlagRepository featureFlagRepository,
                                EnvironmentRepository environmentRepository,
                                FlagStateRepository flagStateRepository,
-                               ChangeLogRepository changeLogRepository) {
+                               ChangeLogRepository changeLogRepository,
+                               FlagEventPublisher flagEventPublisher) {
         this.featureFlagRepository = featureFlagRepository;
         this.environmentRepository = environmentRepository;
         this.flagStateRepository = flagStateRepository;
         this.changeLogRepository = changeLogRepository;
+        this.flagEventPublisher = flagEventPublisher;
     }
 
     // ──────────────────────────────────────────────
@@ -93,6 +96,10 @@ public class FeatureFlagService {
         }
 
         log.info("Feature flag created: name={}, defaultState={}", featureFlag.getName(), featureFlag.isDefaultState());
+        flagEventPublisher.broadcastFlagChange("FLAG_CREATED", featureFlag.getName(), "*", Map.of(
+                "id", featureFlag.getId(),
+                "defaultState", featureFlag.isDefaultState()
+        ));
         return EntityMapper.toFeatureFlagResponse(featureFlag);
     }
 
@@ -154,6 +161,10 @@ public class FeatureFlagService {
 
         flag = featureFlagRepository.save(flag);
         log.info("Feature flag updated: id={}, name={}", flag.getId(), flag.getName());
+        flagEventPublisher.broadcastFlagChange("FLAG_UPDATED", flag.getName(), "*", Map.of(
+                "id", flag.getId(),
+                "defaultState", flag.isDefaultState()
+        ));
         return EntityMapper.toFeatureFlagResponse(flag);
     }
 
@@ -171,6 +182,9 @@ public class FeatureFlagService {
         featureFlagRepository.delete(flag);
 
         log.info("Feature flag deleted: id={}, name={}", id, flag.getName());
+        flagEventPublisher.broadcastFlagChange("FLAG_DELETED", flag.getName(), "*", Map.of(
+                "id", id
+        ));
     }
 
     // ──────────────────────────────────────────────
@@ -216,6 +230,12 @@ public class FeatureFlagService {
         log.info("Flag state changed: flag={}, env={}, enabled={}, rollout={}%, changedBy={}",
                 flagName, request.getEnvironment(), request.isEnabled(),
                 request.getRolloutPercentage(), request.getChangedBy());
+
+        flagEventPublisher.broadcastFlagChange("STATE_CHANGED", flagName, request.getEnvironment(), Map.of(
+                "enabled", request.isEnabled(),
+                "rolloutPercentage", request.getRolloutPercentage(),
+                "changedBy", request.getChangedBy()
+        ));
 
         return EntityMapper.toFlagStateResponse(flagState);
     }
@@ -452,6 +472,7 @@ public class FeatureFlagService {
     @CacheEvict(value = {CacheConfig.CACHE_ENVIRONMENT_FLAGS, CacheConfig.CACHE_FLAG_STATES}, allEntries = true)
     public void purgeAllCaches() {
         log.info("Administrative cache purge executed: all in-memory caches evicted.");
+        flagEventPublisher.broadcastFlagChange("CACHE_PURGED", "*", "*", Map.of());
     }
 
     // ──────────────────────────────────────────────

@@ -1576,6 +1576,89 @@ tr:hover td {
     line-height: 1.35;
 }
 
+/* ─── Realtime Event Stream & Animations ─── */
+.realtime-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #0d0d0d;
+    border: 1px solid var(--border-strong);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+}
+
+.realtime-pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 0 8px #ffffff;
+    animation: livePulse 1.8s infinite;
+}
+
+.realtime-pulse-dot.disconnected {
+    background: #555555;
+    box-shadow: none;
+    animation: none;
+}
+
+.realtime-banner {
+    background: #0f0f0f;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 8px 14px;
+    margin-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.76rem;
+    font-family: var(--font-mono);
+    animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.realtime-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ffffff;
+}
+
+.realtime-banner-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    color: #000000;
+    font-size: 0.7rem;
+    font-weight: 800;
+}
+
+.realtime-banner-time {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+}
+
+@keyframes highlightFlash {
+    0% {
+        box-shadow: 0 0 0 2px #ffffff;
+        background-color: rgba(255, 255, 255, 0.08);
+    }
+    100% {
+        box-shadow: none;
+        background-color: transparent;
+    }
+}
+
+.realtime-highlight-flash {
+    animation: highlightFlash 1.6s ease-out;
+}
+
 /* ─── Responsive Adjustments ─── */
 @media (max-width: 900px) {
     .metrics-grid {

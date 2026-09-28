@@ -35,10 +35,23 @@ const rawJsonResponse = document.getElementById('rawJsonResponse');
 const inspectorEnvName = document.getElementById('inspectorEnvName');
 const activeFlagCountPill = document.getElementById('activeFlagCountPill');
 const floatingChatWidget = document.getElementById('floatingChatWidget');
+const realtimeStatusDot = document.getElementById('realtimeStatusDot');
+const realtimeStatusText = document.getElementById('realtimeStatusText');
+const realtimeToggleBtn = document.getElementById('realtimeToggleBtn');
+const realtimeEventBanner = document.getElementById('realtimeEventBanner');
+const realtimeBannerText = document.getElementById('realtimeBannerText');
+const realtimeBannerTime = document.getElementById('realtimeBannerTime');
 
 // Internal Demo State
 let localThemeOverride = null; // null = use flag, true = dark, false = light
 let lastEvaluations = {};
+let realtimeAutoSync = true;
+let realtimeEventSource = null;
+let realtimeBroadcastChannel = null;
+let realtimeEventCount = 0;
+let lastPolledFlagsHash = '';
+let bannerDismissTimeout = null;
+
 let demoClusterNodes = [
     { id: 'node-us-east-1a', region: 'us-east-1', cpu: '2.4 GHz', status: 'Online' },
     { id: 'node-us-east-1b', region: 'us-east-1', cpu: '2.4 GHz', status: 'Online' },
@@ -69,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     refreshDemoApp();
+    initRealtimeStream();
 });
 
 function setDemoUser(userId, roleLabel) {
@@ -968,3 +982,194 @@ function escapeHtml(str) {
 function escapeAttr(str) {
     return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
 }
+
+// ──────────────────────────────────────────────
+// Real-Time Event Streaming & Auto-Sync Engine
+// ──────────────────────────────────────────────
+
+function initRealtimeStream() {
+    // 1. Establish Server-Sent Events (SSE) connection
+    if (window.EventSource) {
+        setupSseConnection();
+    } else {
+        updateRealtimeIndicator(false, 'SSE Unsupported (Polling Active)');
+    }
+
+    // 2. Setup BroadcastChannel for zero-latency local tab synchronization
+    try {
+        if ('BroadcastChannel' in window) {
+            realtimeBroadcastChannel = new BroadcastChannel('featureflaglite_channel');
+            realtimeBroadcastChannel.onmessage = (event) => {
+                if (event.data) {
+                    handleRealtimeFlagEvent(event.data, 'Local Bus');
+                }
+            };
+        }
+    } catch (e) {
+        console.warn('BroadcastChannel not initialized:', e);
+    }
+
+    // 3. Robust polling fallback every 2.5 seconds to guarantee synchronization
+    setInterval(pollForChanges, 2500);
+}
+
+function setupSseConnection() {
+    if (realtimeEventSource) {
+        try { realtimeEventSource.close(); } catch (e) {}
+    }
+
+    const sseUrl = `${API_BASE}/flags/stream`;
+    try {
+        realtimeEventSource = new EventSource(sseUrl);
+
+        realtimeEventSource.addEventListener('connected', (e) => {
+            updateRealtimeIndicator(true, 'Live SSE Stream • Connected');
+        });
+
+        realtimeEventSource.addEventListener('flag-update', (e) => {
+            try {
+                const data = JSON.parse(e.data);
+                handleRealtimeFlagEvent(data, 'SSE Stream');
+            } catch (err) {
+                console.error('Error parsing SSE event:', err);
+            }
+        });
+
+        realtimeEventSource.onerror = () => {
+            updateRealtimeIndicator(false, 'Stream Reconnecting...');
+        };
+    } catch (e) {
+        console.warn('Could not establish EventSource:', e);
+        updateRealtimeIndicator(false, 'Polling Fallback Active');
+    }
+}
+
+function handleRealtimeFlagEvent(eventData, source) {
+    if (!realtimeAutoSync) return;
+
+    realtimeEventCount++;
+    const currentEnv = demoEnvSelector.value.toLowerCase();
+    const eventEnv = (eventData.environment || '*').toLowerCase();
+    const flagName = eventData.flagName || 'System Flag';
+    const action = eventData.action || 'UPDATED';
+
+    updateRealtimeIndicator(true, `Live Stream • ${realtimeEventCount} event${realtimeEventCount > 1 ? 's' : ''}`);
+
+    // Check if event targets current environment or all environments
+    if (eventEnv === '*' || eventEnv === currentEnv) {
+        showRealtimeBanner(flagName, action, eventEnv === '*' ? currentEnv : eventEnv, eventData);
+        flashAffectedComponent(flagName);
+        refreshDemoApp();
+    }
+}
+
+function showRealtimeBanner(flagName, action, env, data) {
+    if (!realtimeEventBanner) return;
+
+    if (bannerDismissTimeout) {
+        clearTimeout(bannerDismissTimeout);
+    }
+
+    let actionLabel = 'updated';
+    if (action === 'STATE_CHANGED') {
+        const isEnabled = data.details && data.details.enabled !== undefined ? data.details.enabled : null;
+        actionLabel = isEnabled !== null ? (isEnabled ? 'switched ON' : 'switched OFF') : 'state changed';
+    } else if (action === 'FLAG_CREATED') {
+        actionLabel = 'created';
+    } else if (action === 'FLAG_DELETED') {
+        actionLabel = 'deleted';
+    }
+
+    if (realtimeBannerText) {
+        realtimeBannerText.innerHTML = `<strong>Live Update:</strong> Flag <code>${escapeHtml(flagName)}</code> ${escapeHtml(actionLabel)} in <strong>${escapeHtml(env.toUpperCase())}</strong> &bull; Client simulation adapted in real-time.`;
+    }
+    if (realtimeBannerTime) {
+        realtimeBannerTime.textContent = new Date().toLocaleTimeString();
+    }
+
+    realtimeEventBanner.style.display = 'flex';
+
+    bannerDismissTimeout = setTimeout(() => {
+        if (realtimeEventBanner) {
+            realtimeEventBanner.style.display = 'none';
+        }
+    }, 4500);
+}
+
+function flashAffectedComponent(flagName) {
+    let targetElement = null;
+
+    if (flagName === 'betaSearch') {
+        targetElement = searchFeatureArea;
+    } else if (flagName === 'newDashboard') {
+        targetElement = dashboardFeatureArea;
+    } else if (flagName === 'newCheckout') {
+        targetElement = checkoutFeatureArea;
+    } else if (flagName === 'TestFlag' || flagName === 'TestF') {
+        targetElement = resourceFeatureArea;
+    } else if (flagName === 'liveChatSupport') {
+        targetElement = floatingChatWidget || securityActionsArea;
+    } else if (flagName === 'darkMode') {
+        targetElement = themeFeatureArea;
+    } else if (['twoFactorAuth', 'biometricFaceUnlock', 'ssoEnterpriseOkta', 'exportToPdf', 'aiTelemetrySummarizer'].includes(flagName)) {
+        targetElement = securityActionsArea;
+    } else {
+        targetElement = customFlagsArea;
+    }
+
+    if (targetElement) {
+        targetElement.classList.remove('realtime-highlight-flash');
+        void targetElement.offsetWidth; // trigger reflow
+        targetElement.classList.add('realtime-highlight-flash');
+    }
+}
+
+function updateRealtimeIndicator(isConnected, label) {
+    if (realtimeStatusDot) {
+        realtimeStatusDot.className = isConnected ? 'status-dot' : 'status-dot status-dot-offline';
+    }
+    if (realtimeStatusText) {
+        realtimeStatusText.textContent = label;
+    }
+}
+
+function toggleRealtimeSync() {
+    realtimeAutoSync = !realtimeAutoSync;
+    if (realtimeToggleBtn) {
+        if (realtimeAutoSync) {
+            realtimeToggleBtn.className = 'btn btn-primary btn-sm';
+            realtimeToggleBtn.textContent = '⚡ Realtime: ON';
+            showToast('Real-time auto-sync activated. UI will adapt instantly on flag changes.');
+            refreshDemoApp();
+        } else {
+            realtimeToggleBtn.className = 'btn btn-secondary btn-sm';
+            realtimeToggleBtn.textContent = '⚡ Realtime: PAUSED';
+            showToast('Real-time auto-sync paused. Manual refresh required.');
+        }
+    }
+}
+
+async function pollForChanges() {
+    if (!realtimeAutoSync) return;
+    const env = demoEnvSelector ? demoEnvSelector.value : 'dev';
+
+    try {
+        const flagsData = await apiFetch(`/flags?environment=${env}`);
+        const currentHash = JSON.stringify(flagsData.flags);
+
+        if (lastPolledFlagsHash && lastPolledFlagsHash !== currentHash) {
+            // State changed since last poll
+            lastPolledFlagsHash = currentHash;
+            handleRealtimeFlagEvent({
+                action: 'STATE_CHANGED',
+                flagName: 'Environment Flags',
+                environment: env
+            }, 'Heartbeat Poll');
+        } else {
+            lastPolledFlagsHash = currentHash;
+        }
+    } catch (e) {
+        // Silently swallow background poll errors
+    }
+}
+

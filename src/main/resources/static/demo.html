@@ -16,9 +16,9 @@
                     <span class="brand-title">FeatureFlagLite</span>
                     <span class="brand-version">v1.2 Simulation</span>
                 </a>
-                <div class="system-status-indicator" title="Live connection to FeatureFlagLite REST endpoints">
-                    <span class="status-dot"></span>
-                    <span class="status-text">Live API Stream • Latency &lt; 1ms</span>
+                <div class="system-status-indicator" id="realtimeIndicatorBadge" title="Server-Sent Events (SSE) live connection">
+                    <span class="status-dot" id="realtimeStatusDot"></span>
+                    <span class="status-text" id="realtimeStatusText">Live SSE Stream • Connected</span>
                 </div>
             </div>
 
@@ -59,6 +59,9 @@
                         <button class="btn btn-primary" onclick="refreshDemoApp()">
                             ↻ Re-Evaluate
                         </button>
+                        <button class="btn btn-secondary btn-sm" id="realtimeToggleBtn" onclick="toggleRealtimeSync()" title="Toggle live real-time auto-sync">
+                            ⚡ Realtime: ON
+                        </button>
                     </div>
                     <div class="chip-row" style="margin-top: 6px;">
                         <span class="chip" onclick="setDemoUser('developer-alice', 'Internal Developer')">developer-alice (Eng)</span>
@@ -68,6 +71,15 @@
                         <span class="chip" onclick="setDemoUser('guest-99', 'Anonymous Guest')">guest-99</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Realtime Event Flash Announcement Banner -->
+            <div id="realtimeEventBanner" class="realtime-banner" style="display:none;">
+                <div class="realtime-banner-content">
+                    <span class="realtime-banner-icon">⚡</span>
+                    <span id="realtimeBannerText">Real-time update received...</span>
+                </div>
+                <span class="realtime-banner-time" id="realtimeBannerTime">just now</span>
             </div>
         </section>
 

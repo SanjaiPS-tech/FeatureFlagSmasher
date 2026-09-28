@@ -32,9 +32,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class FeatureFlagController {
 
     private final FeatureFlagService featureFlagService;
+    private final com.FeatureFlagLite.FeartureFlagSmasher.service.FlagEventPublisher flagEventPublisher;
 
-    public FeatureFlagController(FeatureFlagService featureFlagService) {
+    public FeatureFlagController(FeatureFlagService featureFlagService,
+                                 com.FeatureFlagLite.FeartureFlagSmasher.service.FlagEventPublisher flagEventPublisher) {
         this.featureFlagService = featureFlagService;
+        this.flagEventPublisher = flagEventPublisher;
     }
 
     // ──────────────────────────────────────────────
@@ -68,6 +71,15 @@ public class FeatureFlagController {
     // ──────────────────────────────────────────────
     // Administrative & System Endpoints (Ordered before /{id} & /{flagName})
     // ──────────────────────────────────────────────
+
+    /**
+     * Real-time Server-Sent Events (SSE) stream.
+     * Pushes instant notifications whenever flags are created, updated, or toggled.
+     */
+    @GetMapping(value = {"/stream", "/system/stream"}, produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter streamFlagEvents() {
+        return flagEventPublisher.registerEmitter();
+    }
 
     /**
      * Get the global system audit log across all flags and environments.

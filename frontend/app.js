@@ -673,6 +673,23 @@ function updateRolloutExplanation() {
     }
 }
 
+function broadcastLocalFlagChange(action, flagName, environment, details = {}) {
+    try {
+        if ('BroadcastChannel' in window) {
+            const channel = new BroadcastChannel('featureflaglite_channel');
+            channel.postMessage({
+                action,
+                flagName,
+                environment: environment || activeEnv,
+                details,
+                timestamp: Date.now()
+            });
+        }
+    } catch (e) {
+        // Optional
+    }
+}
+
 async function handleUpdateStateSubmit(event) {
     event.preventDefault();
 
@@ -691,6 +708,7 @@ async function handleUpdateStateSubmit(event) {
             })
         });
 
+        broadcastLocalFlagChange('STATE_CHANGED', flagName, activeEnv, { enabled, rolloutPercentage });
         showToast(`Configuration saved for "${flagName}" in ${activeEnv.toUpperCase()}`);
         closeEditModal();
         loadFlags();
@@ -726,6 +744,7 @@ async function handleCreateFlagSubmit(event) {
             body: JSON.stringify({ name, description, defaultState })
         });
 
+        broadcastLocalFlagChange('FLAG_CREATED', name, '*', { defaultState });
         showToast(`Feature flag "${name}" created and initialized across DEV, TEST, and PROD.`);
         closeCreateModal();
         loadFlags();
@@ -783,6 +802,7 @@ async function confirmDeleteFlag(id, name) {
 
     try {
         await apiFetch(`/flags/${id}`, { method: 'DELETE' });
+        broadcastLocalFlagChange('FLAG_DELETED', name, '*', {});
         showToast(`Feature flag "${name}" has been retired.`);
         loadFlags();
     } catch (error) {
